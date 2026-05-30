@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Following Branch in His Last Days</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --lob: #8B0000;
+    --bg: #0e0c08;
+    --surface: #1a1710;
+    --border: #3a3020;
+    --gold: #c8a96e;
+    --text: #e8d9b8;
+    --muted: #9a8a6a;
+  }
+
+  body {
+    font-family: 'EB Garamond', Georgia, serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* HEADER */
+  header {
+    padding: 8px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-shrink: 0;
+    z-index: 1000;
+  }
+
+  .title-block h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.05rem;
+    font-style: italic;
+    color: var(--gold);
+    line-height: 1.1;
+  }
+  .title-block p {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-top: 1px;
+  }
+
+  .legend {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* DAY FILTER */
+  .day-filter {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+  .day-filter label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-right: 4px;
+  }
+  .day-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'EB Garamond', serif;
+    font-size: 0.7rem;
+    padding: 3px 8px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+  }
+  .day-btn.active, .day-btn:hover {
+    background: var(--border);
+    color: var(--gold);
+    border-color: var(--gold);
+  }
+
+  /* MAIN LAYOUT */
+  .main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: 320px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .sidebar-list {
+    overflow-y: auto;
+    flex: 1;
+    padding: 8px 0;
+  }
+  .sidebar-list::-webkit-scrollbar { width: 4px; }
+  .sidebar-list::-webkit-scrollbar-track { background: var(--bg); }
+  .sidebar-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .stop-item {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.15s;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .stop-item:hover { background: rgba(200,169,110,0.05); }
+  .stop-item.active { background: rgba(200,169,110,0.1); border-left: 3px solid var(--gold); }
+
+  .stop-day-badge {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    white-space: nowrap;
+    padding-top: 2px;
+    min-width: 30px;
+  }
+
+  .stop-info { flex: 1; min-width: 0; }
+  .stop-name {
+    font-size: 0.85rem;
+    color: var(--text);
+    line-height: 1.3;
+    font-weight: 500;
+  }
+  .stop-location {
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-top: 2px;
+    font-style: italic;
+  }
+  .stop-date {
+    font-size: 0.65rem;
+    color: var(--muted);
+    margin-top: 2px;
+    letter-spacing: 0.04em;
+  }
+
+  .char-pip {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-top: 5px;
+    flex-shrink: 0;
+  }
+
+  /* MAP */
+  #map { flex: 1; }
+
+  /* POPUP PANEL */
+  .popup-panel {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 340px;
+    max-height: 60vh;
+    background: rgba(14,12,8,0.96);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    z-index: 900;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.6);
+  }
+  .popup-panel.visible { display: flex; }
+
+  .popup-header {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .popup-header-text { flex: 1; }
+  .popup-day {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+  }
+  .popup-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    color: var(--gold);
+    line-height: 1.2;
+    margin-top: 2px;
+  }
+  .popup-location {
+    font-size: 0.72rem;
+    color: var(--muted);
+    font-style: italic;
+    margin-top: 2px;
+  }
+  .popup-date-hist {
+    font-size: 0.68rem;
+    color: var(--muted);
+    margin-top: 3px;
+    letter-spacing: 0.04em;
+  }
+
+  .popup-close {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .popup-close:hover { color: var(--text); }
+
+  .popup-body {
+    overflow-y: auto;
+    flex: 1;
+    padding: 12px 14px;
+  }
+  .popup-body::-webkit-scrollbar { width: 3px; }
+  .popup-body::-webkit-scrollbar-thumb { background: var(--border); }
+
+  .narrative-section {
+    margin-bottom: 12px;
+  }
+  .narrative-label {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .narrative-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+  .narrative-text {
+    font-size: 0.82rem;
+    line-height: 1.65;
+    color: var(--text);
+  }
+  .narrative-text.fiction {
+    font-style: italic;
+    color: #c8b890;
+  }
+
+  .visitor-box {
+    background: rgba(200,169,110,0.06);
+    border: 1px solid rgba(200,169,110,0.2);
+    border-radius: 2px;
+    padding: 8px 10px;
+    margin-top: 8px;
+  }
+  .visitor-label {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--gold);
+    margin-bottom: 4px;
+  }
+  .visitor-text {
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* LEAFLET OVERRIDES */
+  .leaflet-control-attribution {
+    background: rgba(14,12,8,0.85) !important;
+    color: var(--muted) !important;
+    font-size: 0.6rem !important;
+  }
+  .leaflet-control-attribution a { color: var(--gold) !important; }
+  .leaflet-control-zoom a {
+    background: var(--surface) !important;
+    color: var(--gold) !important;
+    border-color: var(--border) !important;
+  }
+  .leaflet-control-zoom a:hover { background: var(--border) !important; }
+
+  /* CUSTOM MARKERS */
+  .marker-pin {
+    width: 26px;
+    height: 26px;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    border: 2px solid rgba(255,255,255,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .marker-pin span {
+    transform: rotate(45deg);
+    font-size: 0.55rem;
+    font-weight: bold;
+    color: white;
+    font-family: 'EB Garamond', serif;
+  }
+
+  @media (max-width: 700px) {
+    .sidebar { display: none; }
+    .popup-panel { width: calc(100vw - 24px); right: 12px; }
+    .legend { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="title-block">
+    <h1>Following Branch in His Last Days</h1>
+    <p>Second Manassas &amp; Maryland Campaigns · Summer–Fall 1862</p>
+  </div>
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#8B0000"></div>
+      L.O.B. Branch
+    </div>
+  </div>
+  <div class="day-filter">
+    <label>Day</label>
+    <button class="day-btn active" onclick="filterDay(0, this)">All</button>
+    <button class="day-btn" onclick="filterDay(1, this)">1</button>
+    <button class="day-btn" onclick="filterDay(2, this)">2</button>
+    <button class="day-btn" onclick="filterDay(3, this)">3</button>
+    <button class="day-btn" onclick="filterDay(4, this)">4</button>
+    <button class="day-btn" onclick="filterDay(5, this)">5</button>
+    <button class="day-btn" onclick="filterDay(6, this)">6</button>
+    <button class="day-btn" onclick="filterDay(7, this)">7</button>
+  </div>
+</header>
+
+<div class="main">
+  <div class="sidebar">
+    <div class="sidebar-list" id="sidebar-list"></div>
+  </div>
+  <div style="position:relative;flex:1;">
+    <div id="map" style="width:100%;height:100%;"></div>
+    <div class="popup-panel" id="popup-panel">
+      <div class="popup-header">
+        <div class="popup-header-text">
+          <div class="popup-day" id="popup-day"></div>
+          <div class="popup-name" id="popup-name"></div>
+          <div class="popup-location" id="popup-location"></div>
+          <div class="popup-date-hist" id="popup-date"></div>
+        </div>
+        <button class="popup-close" onclick="closePopup()">×</button>
+      </div>
+      <div class="popup-body" id="popup-body"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── MAP INIT ────────────────────────────────────────────────
+const map = L.map('map', { center: [38.95, -77.6], zoom: 8, zoomControl: true });
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
+  maxZoom: 19
+}).addTo(map);
+
+// ── TOUR DATA ───────────────────────────────────────────────
+const stops = [
+  {
+    id:'stop_01', day:1, order:1,
+    name:'Washington Union Station',
+    location:'Washington, DC',
+    address:'50 Massachusetts Ave NE, Washington, DC',
+    character:'LOB',
+    date_historical:'1855–1861',
+    category:'departure',
+    narrative_documented:'Lawrence O\'Bryan Branch served as a U.S. Congressman from North Carolina from 1855 to 1861, walking these halls as a legislator before resigning his seat when North Carolina seceded. Union Station stands near the corridors of power where Branch once worked as a statesman. He left Washington as a Congressman and would return — if at all — only as an enemy.',
+    narrative_fiction:'',
+    visitor_info:'Start your journey here. Consider the irony — Branch departed this city as a Congressman and returned as an enemy.',
+    ramsay_note:'',
+    coords:[-77.0059, 38.8973]
+  },
+  {
+    id:'stop_02', day:1, order:2,
+    name:'American Civil War Museum — Historic Tredegar',
+    location:'Richmond, VA',
+    address:'500 Tredegar St, Richmond, VA',
+    character:'LOB',
+    date_historical:'1861–1862',
+    category:'museum',
+    narrative_documented:'Tredegar Iron Works was the Confederacy\'s most important industrial facility, producing the artillery that armed Branch\'s batteries. Richmond became the Confederate capital and the center of the war machine that Branch would serve.',
+    narrative_fiction:'',
+    visitor_info:'Excellent museum for establishing Civil War context. Allow 2–3 hours before heading north.',
+    ramsay_note:'',
+    coords:[-77.4605, 37.5317]
+  },
+  {
+    id:'stop_03', day:1, order:3,
+    name:'Ashland Amtrak Station',
+    location:'Ashland, VA',
+    address:'100 N Railroad Ave, Ashland, VA',
+    character:'LOB',
+    date_historical:'Summer 1862',
+    category:'transit',
+    narrative_documented:'The Virginia Central Railroad was the lifeline of Confederate logistics. Branch\'s brigade moved through this corridor repeatedly during the summer campaigns of 1862 under A.P. Hill.',
+    narrative_fiction:'',
+    visitor_info:'Overnight: The Henry Clay Inn, Ashland — a short walk from the station.',
+    ramsay_note:'',
+    coords:[-77.4791, 37.7596]
+  },
+  {
+    id:'stop_04', day:2, order:1,
+    name:'The Henry Clay Inn',
+    location:'Ashland, VA',
+    address:'114 N Railroad Ave, Ashland, VA',
+    character:'LOB',
+    date_historical:'Summer 1862',
+    category:'lodging',
+    narrative_documented:'',
+    narrative_fiction:'',
+    visitor_info:'Your base for Day 2. Historic inn in the heart of Ashland, steps from the railroad that defined Confederate troop movements.',
+    ramsay_note:'',
+    coords:[-77.4789, 37.7598]
+  },
+  {
+    id:'stop_05', day:2, order:2,
+    name:'Exchange Hotel Civil War Medical Museum',
+    location:'Gordonsville, VA',
+    address:'400 S Main St, Gordonsville, VA',
+    character:'LOB',
+    date_historical:'1862',
+    category:'museum',
+    narrative_documented:'The Exchange Hotel received thousands of wounded from the nearby campaigns. Branch\'s men who fell at Cedar Mountain and Second Manassas passed through facilities like this one. The brutal reality of Civil War medicine is preserved here in full.',
+    narrative_fiction:'',
+    visitor_info:'Sobering and essential stop. Puts the human cost of the campaign into stark relief before the battlefields ahead.',
+    ramsay_note:'',
+    coords:[-78.1841, 38.1368]
+  },
+  {
+    id:'stop_06', day:2, order:3,
+    name:'The Inn at Willow Grove',
+    location:'Orange, VA',
+    address:'14079 Plantation Way, Orange, VA',
+    character:'LOB',
+    date_historical:'Summer 1862',
+    category:'lodging',
+    narrative_documented:'',
+    narrative_fiction:'',
+    visitor_info:'Overnight stop. Historic plantation inn in the Virginia Piedmont — the same countryside Branch\'s men marched through.',
+    ramsay_note:'',
+    coords:[-78.1019, 38.2457]
+  },
+  {
+    id:'stop_07', day:3, order:1,
+    name:'Cedar Mountain Battlefield',
+    location:'Rapidan, VA',
+    address:'9465 General Winder Rd, Rapidan, VA',
+    character:'LOB',
+    date_historical:'August 9, 1862',
+    category:'battlefield',
+    narrative_documented:'Branch\'s brigade fought at Cedar Mountain on August 9, 1862 under Stonewall Jackson. A.P. Hill\'s division — including Branch — arrived late in the battle to help secure the Confederate victory. This was the opening movement of the campaign that would end at Antietam.',
+    narrative_fiction:'',
+    visitor_info:'Less visited than the major battlefields — quiet and evocative. The cedar-covered mountain looms over the field much as it did in 1862.',
+    ramsay_note:'',
+    coords:[-77.9833, 38.3617]
+  },
+  {
+    id:'stop_08', day:3, order:2,
+    name:'Rector Tract',
+    location:'Remington, VA',
+    address:'River Road, Remington, VA',
+    character:'LOB',
+    date_historical:'August 1862',
+    category:'route',
+    narrative_documented:'Branch\'s brigade moved through this Rappahannock River region as part of Jackson\'s sweeping flanking march that set up the Second Battle of Manassas.',
+    narrative_fiction:'',
+    visitor_info:'Rural stop along the historic march route. The landscape is largely unchanged.',
+    ramsay_note:'',
+    coords:[-77.8069, 38.5324]
+  },
+  {
+    id:'stop_09', day:3, order:3,
+    name:'Major John Pelham Mortuary Marker',
+    location:'Remington, VA',
+    address:'Remington, VA',
+    character:'LOB',
+    date_historical:'1863',
+    category:'memorial',
+    narrative_documented:'Major John Pelham, the celebrated Confederate artillery commander known as "the Gallant Pelham," fell near here in 1863. He served in the same army as Branch — part of the brotherhood of officers that the war was consuming one by one.',
+    narrative_fiction:'',
+    visitor_info:'Brief stop. Connects the broader human story of officers lost in this theater.',
+    ramsay_note:'',
+    coords:[-77.8100, 38.5350]
+  },
+  {
+    id:'stop_10', day:4, order:1,
+    name:'Bristoe Station Battlefield Heritage Park',
+    location:'Bristow, VA',
+    address:'10708 Bristow Rd, Bristow, VA',
+    character:'LOB',
+    date_historical:'August 26, 1862',
+    category:'battlefield',
+    narrative_documented:'Branch\'s brigade was part of the Confederate force that struck the Union supply depot at Bristoe Station on August 26, 1862 — cutting Pope\'s army from its supplies. A key move that set up the Second Manassas victory.',
+    narrative_fiction:'',
+    visitor_info:'Well-preserved park. The railroad grade from 1862 is still visible. A testament to how railroads defined this war.',
+    ramsay_note:'',
+    coords:[-77.5441, 38.7219]
+  },
+  {
+    id:'stop_11', day:4, order:2,
+    name:'The Manassas Museum',
+    location:'Manassas, VA',
+    address:'9101 Prince William St, Manassas, VA',
+    character:'LOB',
+    date_historical:'August 28–30, 1862',
+    category:'museum',
+    narrative_documented:'Second Manassas, August 28–30, 1862, was one of the Confederacy\'s greatest victories. Branch\'s brigade under A.P. Hill held the Confederate left against massive Union assaults on August 30th in some of the most intense fighting of the entire war.',
+    narrative_fiction:'',
+    visitor_info:'Start here for context before visiting the battlefield. The museum places Branch\'s role in the larger tactical picture.',
+    ramsay_note:'',
+    coords:[-77.4763, 38.7468]
+  },
+  {
+    id:'stop_12', day:4, order:3,
+    name:'Brawner Farm Interpretive Center',
+    location:'Gainesville, VA',
+    address:'17904 Pageland Lane, Gainesville, VA',
+    character:'LOB',
+    date_historical:'August 28, 1862',
+    category:'battlefield',
+    narrative_documented:'The opening engagement of Second Manassas occurred at Brawner Farm on August 28 when Jackson\'s forces attacked King\'s Union division. Branch\'s brigade was positioned as the larger battle developed around them.',
+    narrative_fiction:'',
+    visitor_info:'Excellent interpretive center. The fields look remarkably as they did in 1862.',
+    ramsay_note:'',
+    coords:[-77.5572, 38.7891]
+  },
+  {
+    id:'stop_13', day:4, order:4,
+    name:'Sudley United Methodist Church',
+    location:'Manassas, VA',
+    address:'10020 Sudley Rd, Manassas, VA',
+    character:'LOB',
+    date_historical:'August 1862',
+    category:'historic_site',
+    narrative_documented:'Sudley Church served as a field hospital during both battles of Manassas. Branch\'s wounded men were brought here. The church stands as it did — a reminder that every battlefield victory was measured in broken men carried here on stretchers.',
+    narrative_fiction:'',
+    visitor_info:'The church still stands. A quiet and moving stop on a road that has seen too much.',
+    ramsay_note:'',
+    coords:[-77.5388, 38.8156]
+  },
+  {
+    id:'stop_14', day:4, order:5,
+    name:'Ox Hill Battlefield Park',
+    location:'Fairfax, VA',
+    address:'4134 West Ox Rd, Fairfax, VA',
+    character:'LOB',
+    date_historical:'September 1, 1862',
+    category:'battlefield',
+    narrative_documented:'The Battle of Chantilly on September 1, 1862 was the final action of the Second Manassas campaign. Branch\'s brigade pursued Pope\'s retreating army here. Two Union generals — Phil Kearny and Isaac Stevens — were killed in the confusion and rain.',
+    narrative_fiction:'',
+    visitor_info:'Small urban park, now surrounded by suburbs. The contrast between then and now is striking in itself.',
+    ramsay_note:'',
+    coords:[-77.3894, 38.8712]
+  },
+  {
+    id:'stop_15', day:4, order:6,
+    name:"White's Ferry",
+    location:'Leesburg, VA',
+    address:"Whites Ferry Rd, Leesburg, VA",
+    character:'LOB',
+    date_historical:'September 4–6, 1862',
+    category:'crossing',
+    narrative_documented:"Lee's Army of Northern Virginia crossed the Potomac into Maryland in early September 1862, beginning the Maryland Campaign. Branch's brigade crossed near here, entering Union territory for the first time. This was the Confederacy's first major invasion of the North — they believed they could end the war in Maryland.",
+    narrative_fiction:"Stand at the river's edge. The men who waded across here had won stunning victories at Cedar Mountain, Second Manassas, and Chantilly. They were exhausted, hungry, and barefoot — many of them. And they believed they were about to win the war.",
+    visitor_info:"The Potomac crossing point. Highly evocative — stand where Branch's men waded into Maryland.",
+    ramsay_note:'',
+    coords:[-77.5038, 39.1557]
+  },
+  {
+    id:'stop_16', day:5, order:1,
+    name:'Frederick, Maryland',
+    location:'Frederick, MD',
+    address:'Frederick, MD',
+    character:'LOB',
+    date_historical:'September 6–10, 1862',
+    category:'town',
+    narrative_documented:"Lee's army occupied Frederick briefly. The famous Lost Order — Special Orders No. 191 — was issued here and later found wrapped around cigars by Union soldiers, handing McClellan knowledge of Confederate dispositions. This intelligence blunder set in motion the desperate events of Antietam.",
+    narrative_fiction:'',
+    visitor_info:'The National Museum of Civil War Medicine is here — highly recommended. The city retains much of its 1862 character.',
+    ramsay_note:'',
+    coords:[-77.4110, 39.4143]
+  },
+  {
+    id:'stop_17', day:5, order:2,
+    name:"Turner's Gap — South Mountain",
+    location:"Turner's Gap, MD",
+    address:"Turner's Gap, Maryland",
+    character:'LOB',
+    date_historical:'September 14, 1862',
+    category:'battlefield',
+    narrative_documented:"The Battle of South Mountain on September 14 was a desperate Confederate rearguard action. Branch's brigade had been sent to Harpers Ferry — he was NOT at South Mountain. His path diverges here, going south toward Harpers Ferry while others held the gaps. The two threads of our story split here before converging at Antietam.",
+    narrative_fiction:'',
+    visitor_info:"Drive the scenic National Pike over the mountain. Look south toward Harpers Ferry — that is where Branch was marching while this fight raged.",
+    ramsay_note:'',
+    coords:[-77.6308, 39.4821]
+  },
+  {
+    id:'stop_18', day:6, order:1,
+    name:'Martinsburg, West Virginia',
+    location:'Martinsburg, WV',
+    address:'Martinsburg, WV',
+    character:'LOB',
+    date_historical:'September 1862',
+    category:'route',
+    narrative_documented:"Branch's brigade moved through the Shenandoah Valley corridor as part of the force converging on Harpers Ferry. The Valley Pike was the highway of the Confederate army.",
+    narrative_fiction:'',
+    visitor_info:'Historic B&O Railroad depot worth a stop. The railroad Branch\'s men used still runs through here.',
+    ramsay_note:'',
+    coords:[-77.9638, 39.4562]
+  },
+  {
+    id:'stop_19', day:6, order:2,
+    name:'Harpers Ferry National Historical Park',
+    location:'Harpers Ferry, WV',
+    address:'Shoreline Drive, Harpers Ferry, WV',
+    character:'LOB',
+    date_historical:'September 13–15, 1862',
+    category:'battlefield',
+    narrative_documented:"Jackson captured Harpers Ferry and its 12,500 Union garrison on September 15, 1862 — the largest surrender of U.S. forces until Bataan in 1942. Branch's brigade was part of the capturing force. Immediately after the surrender, Branch's men began the urgent overnight march to Sharpsburg to join Lee, who was being pressed by McClellan.",
+    narrative_fiction:"Branch's men had been fighting and marching for weeks. Exhausted, hungry, many without shoes. Yet they marched through the night toward the sound of the guns at Sharpsburg. They did not know what awaited them — only that Lee needed them.",
+    visitor_info:"Spend meaningful time here. Stand at the overlook above the confluence of the Shenandoah and Potomac. Look north toward Maryland — Branch's men marched that direction in darkness on the night of September 16.",
+    ramsay_note:'',
+    coords:[-77.7310, 39.3254]
+  },
+  {
+    id:'stop_20', day:7, order:1,
+    name:'Antietam National Battlefield',
+    location:'Sharpsburg, MD',
+    address:'5831 Dunker Church Rd, Sharpsburg, MD',
+    character:'LOB',
+    date_historical:'September 17, 1862',
+    category:'battlefield_final',
+    narrative_documented:"September 17, 1862 — the bloodiest single day in American history. 23,000 casualties in one day. Branch's brigade arrived from Harpers Ferry as part of A.P. Hill's famous Light Division March — 17 miles in 8 hours — striking the exposed Union left flank and saving Lee's army from destruction. On the field that afternoon, a Confederate artillery officer named Lieutenant Ramsay was with his battery near Sharpsburg when he encountered General Lee trying to identify distant troops. Lee's own hands were injured and he could not use Ramsay's telescope himself — so Ramsay dismounted, looked through the glass, and described what he saw: Confederate flags approaching from the south. It was Hill's column — Branch's men — that Ramsay was reporting to Lee through that lens. Branch arrived, fought, and was killed by a sharpshooter late in the afternoon. He was 41 years old. His last letters to his wife Nancy — his 'Nanny' — ended with the phrase: 'kiss the children.'",
+    narrative_fiction:"Branch had marched through the night. The men around him had not eaten in two days, many had no shoes. Yet they came on at the quick-step, then at the double-quick, then at a run as the sound of the guns grew closer. He did not know that at that same moment, a man with a telescope on the other side of the field was looking at his column through a glass and telling Robert E. Lee what he saw. He did not know he was the answer to Lee's prayer. He only knew the army needed him. He rode forward.",
+    visitor_info:"Begin at the Visitor Center. Watch the orientation film. Then drive the battlefield auto tour. The Cornfield, the Sunken Road, Burnside Bridge. Find the location on A.P. Hill's flank where Branch fell. Stand there. Read his last letter. 'Kiss the children.'",
+    ramsay_note:'',
+    coords:[-77.7446, 39.4757]
+  }
+];
+
+// ── COLORS ──────────────────────────────────────────────────
+const charColor = { LOB:'#8B0000' };
+const charLabel = { LOB:'Branch' };
+
+// ── MARKERS ─────────────────────────────────────────────────
+let markers = [];
+let activeStop = null;
+
+function makeIcon(stop) {
+  const color = charColor[stop.character] || '#555';
+  const isFinal = stop.category === 'battlefield_final';
+  const html = `
+    <div style="
+      width:${isFinal?32:24}px;
+      height:${isFinal?32:24}px;
+      background:${color};
+      border-radius:50% 50% 50% 0;
+      transform:rotate(-45deg);
+      border:2px solid rgba(255,255,255,${isFinal?0.8:0.4});
+      display:flex;align-items:center;justify-content:center;
+      box-shadow:0 2px 6px rgba(0,0,0,0.5);
+    ">
+      <span style="transform:rotate(45deg);color:white;font-size:${isFinal?10:8}px;font-weight:bold;font-family:serif;">
+        ${stop.day}
+      </span>
+    </div>`;
+  return L.divIcon({ html, className:'', iconSize:[isFinal?32:24,isFinal?32:24], iconAnchor:[isFinal?16:12,isFinal?32:24] });
+}
+
+function buildMarkers(dayFilter) {
+  markers.forEach(m => map.removeLayer(m.marker));
+  markers = [];
+
+  const filtered = dayFilter === 0 ? stops : stops.filter(s => s.day === dayFilter);
+
+  filtered.forEach(stop => {
+    const m = L.marker([stop.coords[1], stop.coords[0]], { icon: makeIcon(stop) });
+    m.addTo(map);
+    m.on('click', () => showStop(stop));
+    markers.push({ stop, marker: m });
+  });
+
+  // Draw route line
+  if (window.routeLine) map.removeLayer(window.routeLine);
+  if (filtered.length > 1) {
+    const latlngs = filtered.map(s => [s.coords[1], s.coords[0]]);
+    window.routeLine = L.polyline(latlngs, {
+      color: '#c8a96e',
+      weight: 3,
+      opacity: 0.85
+    }).addTo(map);
+    window.routeLine.bringToFront();
+  }
+}
+
+function showStop(stop) {
+  activeStop = stop.id;
+
+  // Update sidebar active
+  document.querySelectorAll('.stop-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.id === stop.id);
+  });
+
+  // Pan map
+  map.panTo([stop.coords[1], stop.coords[0]]);
+
+  // Fill popup
+  document.getElementById('popup-day').textContent = `Day ${stop.day} · Stop ${stop.order}`;
+  document.getElementById('popup-name').textContent = stop.name;
+  document.getElementById('popup-location').textContent = stop.location;
+  document.getElementById('popup-date').textContent = stop.date_historical;
+
+  let body = '';
+
+  if (stop.narrative_documented) {
+    body += `<div class="narrative-section">
+      <div class="narrative-label">Historical Record</div>
+      <div class="narrative-text">${stop.narrative_documented}</div>
+    </div>`;
+  }
+
+  if (stop.narrative_fiction) {
+    body += `<div class="narrative-section">
+      <div class="narrative-label">Narrative</div>
+      <div class="narrative-text fiction">${stop.narrative_fiction}</div>
+    </div>`;
+  }
+
+  if (stop.visitor_info) {
+    body += `<div class="visitor-box">
+      <div class="visitor-label">▶ Visitor Notes</div>
+      <div class="visitor-text">${stop.visitor_info}</div>
+    </div>`;
+  }
+
+  document.getElementById('popup-body').innerHTML = body;
+  document.getElementById('popup-panel').classList.add('visible');
+}
+
+function closePopup() {
+  document.getElementById('popup-panel').classList.remove('visible');
+  activeStop = null;
+  document.querySelectorAll('.stop-item').forEach(el => el.classList.remove('active'));
+}
+
+// ── SIDEBAR ─────────────────────────────────────────────────
+function buildSidebar(dayFilter) {
+  const list = document.getElementById('sidebar-list');
+  const filtered = dayFilter === 0 ? stops : stops.filter(s => s.day === dayFilter);
+  let html = '';
+  let currentDay = null;
+
+  filtered.forEach(stop => {
+    if (stop.day !== currentDay) {
+      currentDay = stop.day;
+      html += `<div style="padding:6px 14px 4px;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--gold);border-top:1px solid var(--border);margin-top:${currentDay===1?0:4}px;">Day ${currentDay}</div>`;
+    }
+    const color = charColor[stop.character] || '#555';
+    html += `
+      <div class="stop-item" data-id="${stop.id}" onclick="sidebarClick('${stop.id}')">
+        <div class="char-pip" style="background:${color}"></div>
+        <div class="stop-info">
+          <div class="stop-name">${stop.name}</div>
+          <div class="stop-location">${stop.location}</div>
+          <div class="stop-date">${stop.date_historical}</div>
+        </div>
+      </div>`;
+  });
+
+  list.innerHTML = html;
+}
+
+function sidebarClick(id) {
+  const stop = stops.find(s => s.id === id);
+  if (stop) showStop(stop);
+}
+
+// ── DAY FILTER ───────────────────────────────────────────────
+let currentDay = 0;
+function filterDay(day, btn) {
+  currentDay = day;
+  document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  buildMarkers(day);
+  buildSidebar(day);
+  closePopup();
+  if (day === 0) {
+    map.setView([38.95, -77.6], 8);
+  } else {
+    const dayStops = stops.filter(s => s.day === day);
+    if (dayStops.length) {
+      const lats = dayStops.map(s => s.coords[1]);
+      const lngs = dayStops.map(s => s.coords[0]);
+      map.fitBounds([[Math.min(...lats)-0.1, Math.min(...lngs)-0.1],[Math.max(...lats)+0.1, Math.max(...lngs)+0.1]]);
+    }
+  }
+}
+
+// ── INIT ─────────────────────────────────────────────────────
+buildMarkers(0);
+buildSidebar(0);
+</script>
+</body>
+</html>

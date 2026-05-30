@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Following Ramsay's Battery — A Civil War Tour</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
+  <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --ink:       #1c1510;
+      --parchment: #f2ead8;
+      --aged:      #e4d9be;
+      --rust:      #8b3a1e;
+      --brass:     #9a7c3a;
+      --smoke:     #5a5248;
+      --border:    #c4b48a;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Crimson Pro', Georgia, serif;
+      background: var(--parchment);
+      color: var(--ink);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--ink);
+      color: var(--aged);
+      padding: 10px 20px;
+      display: flex;
+      align-items: baseline;
+      gap: 18px;
+      border-bottom: 3px solid var(--rust);
+      flex-shrink: 0;
+    }
+    header h1 {
+      font-family: 'IM Fell English', Georgia, serif;
+      font-size: 1.45rem;
+      font-weight: 400;
+      letter-spacing: 0.02em;
+      color: var(--parchment);
+    }
+    header span {
+      font-size: 0.85rem;
+      font-style: italic;
+      color: var(--border);
+      letter-spacing: 0.04em;
+    }
+
+    /* ── BODY LAYOUT ── */
+    .layout {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ── SIDEBAR ── */
+    #sidebar {
+      width: 360px;
+      flex-shrink: 0;
+      background: var(--aged);
+      border-right: 2px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #stop-list {
+      overflow-y: auto;
+      flex-shrink: 0;
+      max-height: 38%;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .stop-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+    .stop-item:hover { background: #ddd3b4; }
+    .stop-item.active { background: var(--ink); color: var(--parchment); }
+    .stop-item.active .stop-num { background: var(--rust); color: var(--parchment); }
+    .stop-item.active .stop-name { color: var(--aged); }
+    .stop-item.active .stop-date { color: var(--border); }
+
+    .stop-num {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--rust);
+      color: var(--parchment);
+      font-family: 'IM Fell English', serif;
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .stop-name {
+      font-size: 0.9rem;
+      font-weight: 600;
+      line-height: 1.2;
+      flex: 1;
+    }
+    .stop-date {
+      font-size: 0.75rem;
+      font-style: italic;
+      color: var(--smoke);
+      white-space: nowrap;
+    }
+
+    /* ── NARRATIVE PANEL ── */
+    #narrative-panel {
+      flex: 1;
+      overflow-y: auto;
+      padding: 18px 18px 24px;
+    }
+
+    .narrative-stop-num {
+      font-family: 'IM Fell English', serif;
+      font-size: 2.5rem;
+      color: var(--rust);
+      opacity: 0.35;
+      line-height: 1;
+      margin-bottom: 2px;
+    }
+    .narrative-name {
+      font-family: 'IM Fell English', serif;
+      font-size: 1.25rem;
+      color: var(--ink);
+      line-height: 1.25;
+      margin-bottom: 2px;
+    }
+    .narrative-date {
+      font-size: 0.82rem;
+      font-style: italic;
+      color: var(--smoke);
+      margin-bottom: 4px;
+    }
+    .narrative-phase {
+      display: inline-block;
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--parchment);
+      background: var(--brass);
+      padding: 2px 8px;
+      border-radius: 2px;
+      margin-bottom: 14px;
+    }
+    .narrative-text {
+      font-size: 1rem;
+      line-height: 1.75;
+      color: #2a2018;
+    }
+
+    .placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      text-align: center;
+      opacity: 0.5;
+      padding: 30px;
+    }
+    .placeholder .icon { font-size: 2.5rem; margin-bottom: 10px; }
+    .placeholder p { font-style: italic; font-size: 0.95rem; line-height: 1.6; }
+
+    /* ── MAP ── */
+    #map {
+      flex: 1;
+      z-index: 0;
+    }
+
+    /* ── CUSTOM MARKERS ── */
+    .ramsay-marker {
+      width: 30px;
+      height: 30px;
+      border-radius: 50% 50% 50% 0;
+      transform: rotate(-45deg);
+      border: 2px solid var(--ink);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'IM Fell English', serif;
+      font-weight: bold;
+      color: #fff;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+    .ramsay-marker span {
+      transform: rotate(45deg);
+      display: block;
+    }
+
+    /* ── POPUP ── */
+    .leaflet-popup-content-wrapper {
+      background: var(--ink);
+      color: var(--parchment);
+      border: 1px solid var(--rust);
+      border-radius: 3px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+    }
+    .leaflet-popup-tip { background: var(--ink); }
+    .leaflet-popup-content {
+      font-family: 'Crimson Pro', serif;
+      font-size: 0.9rem;
+      margin: 10px 14px;
+    }
+    .popup-title {
+      font-family: 'IM Fell English', serif;
+      font-size: 1.05rem;
+      color: var(--aged);
+      margin-bottom: 3px;
+    }
+    .popup-date {
+      font-style: italic;
+      color: var(--border);
+      font-size: 0.8rem;
+      margin-bottom: 6px;
+    }
+    .popup-btn {
+      display: inline-block;
+      margin-top: 6px;
+      padding: 4px 12px;
+      background: var(--rust);
+      color: var(--parchment);
+      border: none;
+      border-radius: 2px;
+      font-family: 'Crimson Pro', serif;
+      font-size: 0.82rem;
+      cursor: pointer;
+      letter-spacing: 0.05em;
+    }
+    .popup-btn:hover { background: #a04422; }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--aged); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Following Ramsay's Battery</h1>
+  <span>Captain John Andrew Ramsay · Rowan Artillery · 1861–1865</span>
+</header>
+
+<div class="layout">
+  <div id="sidebar">
+    <div id="stop-list"></div>
+    <div id="narrative-panel">
+      <div class="placeholder">
+        <div class="icon">🔭</div>
+        <p>Select a stop on the map or from the list above to read the narrative for that engagement.</p>
+      </div>
+    </div>
+  </div>
+  <div id="map"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ── TOUR DATA (inline from GeoJSON) ──────────────────────────────────────
+const tourData = {
+  "type": "FeatureCollection",
+  "metadata": {
+    "title": "Following Ramsay's Battery",
+    "subtitle": "The Civil War Journey of Captain John Andrew Ramsay, Rowan Artillery",
+    "dateRange": "1861–1865"
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "stop": 1,
+        "name": "Salisbury, North Carolina",
+        "date": "May 3–25, 1861",
+        "phase": "Enlistment",
+        "narrative": "The Rowan Artillery had existed as a peacetime company since May 18, 1858 — Light Battery D of the Tenth Regiment of Artillery and Engineers of the North Carolina State Troops. When the Civil War came, it received orders on May 3, 1861 from Adjutant-General John F. Hoke to prepare for twelve months of active service. The men went into camp at the old cotton factory in Salisbury and began daily military drills. On May 8th, John A. Ramsay was elected Captain; Calvin M. Black, First Lieutenant; and William W. Myers and Jesse F. Woodard, Second Lieutenants. On May 24th, the ladies of Salisbury presented the company a beautiful flag. Miss Martha McRorie gave the address. Captain Ramsay replied in a speech not exceeding one minute. The Carolina Watchman noted: 'He is a man for action, not words.' On Saturday, May 25th, the officers and men bade farewell to kindred and friends and departed for Weldon."
+      },
+      "geometry": { "type": "Point", "coordinates": [-80.4742, 35.6710] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "stop": 2,
+        "name": "Weldon & Richmond, Virginia",
+        "date": "May–July 1861",
+        "phase": "Organization",
+        "narrative": "The battery arrived at Weldon on May 28th. Governor Ellis telegraphed Captain Ramsay to Raleigh with unwelcome news: the State could not furnish a fine battery unless the men enlisted for the full war. Ramsay returned to Weldon and put it to his men — within three days every member had enlisted for three years or the duration. The Governor then sent a critical piece of news: he had an experienced officer without a command — James Reilly, seventeen years in the United States Army, a veteran of the Mexican War. On July 20, 1861, the Military Board reorganized the company: James Reilly became Captain, and John A. Ramsay was reduced to First Lieutenant. It was a hard reorganization for a man who had raised and commanded the company, but Ramsay accepted it and served faithfully under Reilly. On August 15th the company received four guns — two ten-pound Parrotts and two Dahlgren Howitzers, trophies of the Manassas battlefield — and the work of becoming artillerists began in earnest."
+      },
+      "geometry": { "type": "Point", "coordinates": [-77.4360, 37.5407] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "stop": 3,
+        "name": "Battle of West Point (Eltham's Landing), Virginia",
+        "date": "May 7, 1862",
+        "phase": "Peninsula Campaign",
+        "narrative": "During the Peninsula Campaign, Colonel Stephen D. Lee ordered Captain Reilly to send his right section — the two ten-pound Parrotts — to a fine position on the bank of the Yorktown River, covering the enemy's transports. Lieutenant Ramsay's section took the right position. In a few minutes a long, low gunboat moved out and opened fire on the Confederate guns. The enemy's first shots went over two hundred feet above the battery, but they steadily reduced their elevation until their last shot passed just above the heads of the gunners of Ramsay's left gun. Colonel Lee ordered a cease fire and withdrawal. The section had fired thirty shots and helped drive the enemy back to his transports. The Battle of West Point was over. It was the battery's first significant engagement of the war — and a foretaste of what Ramsay's section would experience again and again in the months ahead."
+      },
+      "geometry": { "type": "Point", "coordinates": [-76.9719, 37.5318] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "stop": 4,
+        "name": "Gaines' Mill, Virginia",
+        "date": "June 27, 1862",
+        "phase": "Seven Days Battles",
+        "narrative": "June 27th the battery moved forward at sunrise and remained in the field until about 3 o'clock in the afternoon, when it was moved in under the enemy's fire. The enemy had three machine guns and a three-inch rifle battery pouring a very destructive fire on the Confederate troops. Captain Reilly's Battery was ordered forward at a rapid gallop and took a position about three hundred yards from the enemy's lines. In about twelve minutes the enemy's machine guns were silenced and their rifle battery crippled. The infantry rushed forward with a thrilling cheer and charged over the enemy's breastworks — the battle of Gaines' Mill was over. The battery expended one hundred rounds. Three enemy machine guns remained standing where their gunners had been killed or driven from them. Colonel Law's Fourth Alabama later presented the captured enemy gun to Captain Reilly's Battery as a compliment for the splendid work done that evening."
+      },
+      "geometry": { "type": "Point", "coordinates": [-77.2648, 37.5982] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "stop": 5,
+        "name": "White Oak Swamp & Malvern Hill, Virginia",
+        "date": "June 30 – July 1, 1862",
+        "phase": "Seven Days Battles",
+        "narrative": "On June 30th the battery marched seven miles to White Oak Swamp, engaged the enemy's artillery, and drove them from their position — expending four hundred and fifty rounds of ammunition. On July 1st, in front of Malvern Hill, General Whiting ordered Captain Reilly and Lieutenant Ramsay to make a thorough reconnaissance of the field. They rode over the field at about one thousand yards from the enemy's batteries and reported back. General Jackson then ordered Captain Reilly to advance at once and commence the action. The fire of the enemy's five batteries was concentrated on one gun, and it was terrible. After fifteen or twenty minutes, General Whiting rode into the battery and said: 'Reilly, take your men out of this.' Twelve men were wounded, and the battery lost eight horses — including Lieutenant Ramsay's. As a memento of the battles around Richmond, Lieutenant Ramsay sent home to Salisbury a bulletproof vest found on a dead Union soldier, made by a company in New Haven, Connecticut."
+      },
+      "geometry": { "type": "Point", "coordinates": [-77.2497, 37.3553] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "stop": 6,
+        "name": "Second Manassas, Virginia",
+        "date": "August 28–31, 1862",
+        "phase": "Second Manassas Campaign",
+        "narrative": "The battery fought across the Second Manassas campaign with remarkable intensity. On August 28th, coming up to Thoroughfare Gap, Lieutenant Ramsay led the battery into a storm of shot and shell after the guide abandoned them in the narrow passage. When Colonel Walton rode up afterward and said 'Lieutenant, you had it pretty hot in here,' Ramsay replied that he had just received reports from all officers — not a man, horse, or piece of property had been injured. Walton replied: 'You are the luckiest man ever God let live. If it had been one of my batteries under such a fire it would have been cut all to pieces.' On August 29th the battery engaged on the Warrenton Turnpike, enfilading General Jackson's lines and expending 55 rounds. On August 30th, during the main engagement, Lieutenant Ramsay was struck on the right knee with the base of a twenty-pounder Parrott shell — but it was so far spent that it only bruised him. The battery expended 520 rounds across the two days. On August 31st the enemy retreated and the Second Battle of Manassas was over."
+      },
+      "geometry": { "type": "Point", "coordinates": [-77.5277, 38.8126] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "stop": 7,
+        "name": "South Mountain, Maryland",
+        "date": "September 14, 1862",
+        "phase": "Maryland Campaign",
+        "narrative": "On September 14th, a courier came galloping with orders to proceed at a gallop to South Mountain and report to General D.H. Hill. The men had been without rations for over twenty-four hours — the patriotic Marylanders would not even sell them firewood. The battery arrived at South Mountain about 3 o'clock, and General Hill was in the gap. He assigned the battery a position with the right gun near the hotel, and gave special orders not to fire unless he ordered it, or unless Confederate troops were driven past the battery up the mountain. They remained under the enemy's fire all afternoon but under orders could not return it. About an hour after dark the battery left the position and encamped near the foot of the mountain. On September 15th the battery was ordered to march in the rear of the army as part of the rear-guard, and was ordered to take position on the right-hand side of the road leading from Sharpsburg to the stone bridge across Antietam Creek."
+      },
+      "geometry": { "type": "Point", "coordinates": [-77.6388, 39.4676] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "stop": 8,
+        "name": "Sharpsburg (Antietam), Maryland",
+        "date": "September 15–19, 1862",
+        "phase": "Battle of Antietam",
+        "narrative": "Four days at Sharpsburg — four days that tested the battery to its limits, and produced the moment with the telescope that defines Ramsay's war. On September 15th, General Hood ordered Lieutenant Ramsay to take one rifle gun to a little ridge about 300 yards left of the road and 350 yards in front of the battle line, and fire into the woods in front. Ramsay fired about eleven or twelve shots before the enemy made it so hot that the rifle batteries on the heights opened fire to relieve him. He fired 21 rounds total and returned without any loss. General Hood personally thanked Ramsay and his men. September 16th: the four rifle guns kept up a steady, well-directed fire until the last shot was fired, expending 484 rounds. Four men wounded. September 17th — the bloodiest day of the war: The battery was still without ammunition in the morning. About 2 o'clock the left section under Lt. William Myers procured ammunition and took position on the right of the line, opening a destructive fire on a column of advancing infantry. The cost was severe: Daniel Misenheimer, Henry Miller, and George Kepley were killed. About 3 o'clock in the afternoon, Lieutenant Ramsay's right section — the ten-pounder Parrotts — had obtained ammunition and started to the front. Near Sharpsburg they met General Lee himself, trying to rally straggling troops. Lee noticed Ramsay's telescope and asked: 'What troops are those?' pointing toward where Captain Reilly's Battery had been positioned the day before. Ramsay drew the telescope from its case and offered it to Lee — but Lee held up his own wounded hand, fingers in bandages, and said: 'Can't use it. What troops are those?' Ramsay dismounted, adjusted the glass, and looked for himself: 'They are flying the United States Flag.' Lee pointed at another body of troops at right angles and asked again. 'They are flying the Virginia and Confederate flags.' Lee said: 'It is A.P. Hill, from Harper's Ferry,' and ordered Ramsay to place his guns on a little knoll to the right of the road. Ramsay warned: 'General Lee, as soon as we fire we will draw the enemy's fire.' Lee replied: 'Never mind me.' Both gunners — James M. Pitman and Ignaz Schoesser — were experts. Five shells scattered the enemy. Lee smiled and said: 'Well done!' The section expended 56 rounds at the first position, then moved and expended 200 more. On September 19th, Lieutenant Ramsay with one ten-pound Parrott was ordered to cover the retreat with General Fitzhugh Lee. At half an hour after sunrise, Fitzhugh Lee directed Ramsay to give the enemy a parting shot — elevated as high as possible, with the longest fuse. Two more shots followed. These were the last shots fired at the Battle of Sharpsburg. The battery had been on the field for four days, the last two and a half without rations. The telescope Ramsay used to be Lee's eyes that afternoon survives today as a family heirloom."
+      },
+      "geometry": { "type": "Point", "coordinates": [-77.7441, 39.4565] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "stop": 9,
+        "name": "Fredericksburg, Virginia",
+        "date": "December 11–16, 1862",
+        "phase": "Battle of Fredericksburg",
+        "narrative": "The battery arrived at Fredericksburg on November 3rd after a long march through Winchester and Front Royal. On December 11th it was ordered to take position on high ground near Dr. Reynolds' house, in front of the enemy. The battery occupied the same position on the 12th, 13th, 14th, 15th, and 16th. The enemy did not attack this part of the Confederate lines. It was a relatively quiet engagement compared to the carnage elsewhere at Fredericksburg, where Burnside's assaults fell primarily on Marye's Heights to the south. The battery wintered near the town. The winter had been bitter, the roads almost impassable, and it had required extraordinary efforts simply to procure forage for the horses. On February 7, 1863, the battery departed camp near Fredericksburg en route for Richmond, where horses and baggage were put on cars."
+      },
+      "geometry": { "type": "Point", "coordinates": [-77.4605, 38.3032] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "stop": 10,
+        "name": "Washington & Suffolk, North Carolina/Virginia",
+        "date": "April–May 1863",
+        "phase": "Coastal Operations",
+        "narrative": "In the spring of 1863 the battery was sent far from the main Army of Northern Virginia. Shipped via Weldon to Tarboro and then marching south, the battery took position in the fortifications around Washington, North Carolina in early April. From April 8th through the 16th it was heavily engaged, expending between 170 and 185 rounds each day — over a thousand rounds across the week. The enemy had succeeded in getting boats up the river with supplies, and the general commanding considered further reduction of the forts impractical. General D.H. Hill sent a personal note thanking Captain Reilly's Battery for their efficient service: 'Would that you were attached to my command. I know of no men I would be so glad to have with me.' The battery then moved to the Suffolk, Virginia area, taking part in the action at Suffolk on May 3rd before beginning the long march back north — through Petersburg — to rejoin the Army of Northern Virginia."
+      },
+      "geometry": { "type": "Point", "coordinates": [-76.9244, 35.5468] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "stop": 11,
+        "name": "Gettysburg, Pennsylvania",
+        "date": "July 1–4, 1863",
+        "phase": "Battle of Gettysburg",
+        "narrative": "Now part of Henry's Battalion, Reilly's and Latham's Batteries were on the extreme right of the Confederate line at Gettysburg on July 2nd. They engaged the enemy and captured three ten-pound Parrotts. One three-inch rifle gun in Reilly's Battery burst during the engagement. On July 3rd the whole four batteries of the battalion were engaged in the same position and lost four killed and twenty-three wounded. They remained on the battlefield until July 4th at 6 P.M., then joined the retreat and marched all night. On July 17th — now promoted to Captain following Reilly's promotion to Major on September 7th — John Andrew Ramsay wrote to his cousin Julius in Salisbury: 'We have been to Pennsylvania and have come out again and had a very heavy battle at Gettysburg and suffered very heavy loss.' Of the Union's claimed victory: 'The Yankees claimed a great victory, but such a victory as the one there would amount to a defeat, had we been able to supply ourselves, with ammunition.'"
+      },
+      "geometry": { "type": "Point", "coordinates": [-77.2311, 39.8309] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "stop": 12,
+        "name": "The Wilderness to the James River, Virginia",
+        "date": "May–June 1864",
+        "phase": "Overland Campaign",
+        "narrative": "Now Ramsay's Battery, as part of Haskell's Battalion attached to Longstreet's First Corps, the unit was held near Cobham's Depot until May 8, 1864, when it was sent forward to aid the cavalry. It was thenceforward more or less engaged all along in the famous struggle from the Wilderness to the James — actively engaged May 9th, June 1st, and June 3rd. On June 7th the battalion passed to the south side of the Chickahominy, and on June 16th crossed the James River on the pontoon bridge. In this series of battles the battalion lost fifteen killed and fifty-one wounded. An old veteran later remembered Captain Ramsay: 'I've seen him lead his men into battle, and I was one of them. It was never go, but come on men.' Once, seated on a log reading a dispatch after a skirmish, an enemy bullet knocked it from his hand. He reached down and picked it up as calmly as if only a gust of wind had taken it away."
+      },
+      "geometry": { "type": "Point", "coordinates": [-77.7332, 38.3140] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "stop": 13,
+        "name": "Petersburg, Virginia",
+        "date": "June 1864 – April 1865",
+        "phase": "Siege of Petersburg",
+        "narrative": "The battery took part in the fighting around Petersburg throughout the nine-month siege. By August 1864 the returns showed the Rowan Battery with one hundred and thirty-six men, seventy-eight serviceable horses, and four guns as equipment. Captain Ramsay carried his Bible throughout the war, and he often said the 91st Psalm gave him constant help and encouragement: 'He that dwelleth in the secret place of the Most High shall abide under the shadow of the Almighty... A thousand shall fall at thy side but it shall not come nigh thee.' Captain Ramsay trusted those promises, and they were all verified to him. On Saturday, April 8th, 1865 — the day before the surrender — the battery fired its last shots near Appomattox Court House, repelling a cavalry charge."
+      },
+      "geometry": { "type": "Point", "coordinates": [-77.4019, 37.2279] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "stop": 14,
+        "name": "Appomattox Court House, Virginia",
+        "date": "April 9, 1865",
+        "phase": "Surrender",
+        "narrative": "On April 9, 1865, General Lee surrendered at Appomattox Court House. The order came directing that the guns be buried, gun-carriages and harness cut to pieces, and all men mount the horses and make their way home to Lincolnton, North Carolina. The men cut the carriages down, burned the wood, buried the guns, and left for home about noon. Some rode the same horses home that they had carried away in 1861. There was many a tear shed that Sunday morning when the orders came. One poor fellow cried like a baby — he said he felt like he was burying some of his people. It was Lieutenant Jesse F. Woodard — one of the original officers from the very first muster in Salisbury — who was in command of the battery at its surrender. The battery had only four guns at the end, because it had given two to a less fortunate battery, and Reilly's then Ramsay's Battery had never lost a gun by capture across four years of war. Captain Ramsay returned to Salisbury, married the widow of his cousin Julius, served as Police Chief and Mayor, built the county's first public school, and was elected to the State Senate. He died January 27, 1909, at age 73."
+      },
+      "geometry": { "type": "Point", "coordinates": [-78.7981, 37.3626] }
+    }
+  ]
+};
+
+// ── MAP INIT ──────────────────────────────────────────────────────────────
+const map = L.map('map', {
+  center: [38.5, -78.0],
+  zoom: 7
+});
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap contributors',
+  maxZoom: 18
+}).addTo(map);
+
+// ── PHASE COLORS ─────────────────────────────────────────────────────────
+const phaseColors = {
+  'Enlistment':           '#4a6741',
+  'Defense of the Capital': '#6b5a2d',
+  'Seven Days Battles':   '#7a3520',
+  'Maryland Campaign':    '#3a4f6b',
+  'Battle of Antietam':   '#8b1a1a',
+  'Battle of Fredericksburg': '#5a3a6b',
+  'Battle of Gettysburg': '#6b3a20',
+  'Overland Campaign':    '#4a3a20',
+  'Siege of Petersburg':  '#2a3a4a',
+  'Surrender':            '#3a3a3a'
+};
+
+// ── STATE ─────────────────────────────────────────────────────────────────
+let activeStop = null;
+const markers = [];
+
+// ── BUILD STOP LIST ───────────────────────────────────────────────────────
+const stopList = document.getElementById('stop-list');
+tourData.features.forEach(f => {
+  const p = f.properties;
+  const item = document.createElement('div');
+  item.className = 'stop-item';
+  item.dataset.stop = p.stop;
+  item.innerHTML = `
+    <div class="stop-num">${p.stop}</div>
+    <div class="stop-name">${p.name}</div>
+    <div class="stop-date">${p.date}</div>
+  `;
+  item.addEventListener('click', () => selectStop(p.stop));
+  stopList.appendChild(item);
+});
+
+// ── NARRATIVE RENDER ──────────────────────────────────────────────────────
+function renderNarrative(p) {
+  document.getElementById('narrative-panel').innerHTML = `
+    <div class="narrative-stop-num">${p.stop}</div>
+    <div class="narrative-name">${p.name}</div>
+    <div class="narrative-date">${p.date}</div>
+    <div class="narrative-phase">${p.phase}</div>
+    <div class="narrative-text">${p.narrative}</div>
+  `;
+}
+
+// ── SELECT STOP ───────────────────────────────────────────────────────────
+function selectStop(stopNum) {
+  activeStop = stopNum;
+
+  // Highlight list item
+  document.querySelectorAll('.stop-item').forEach(el => {
+    el.classList.toggle('active', parseInt(el.dataset.stop) === stopNum);
+  });
+
+  const feature = tourData.features.find(f => f.properties.stop === stopNum);
+  renderNarrative(feature.properties);
+
+  // Pan map
+  const [lng, lat] = feature.geometry.coordinates;
+  map.setView([lat, lng], 10, { animate: true });
+
+  // Open marker popup
+  const marker = markers.find(m => m.stopNum === stopNum);
+  if (marker) marker.leaflet.openPopup();
+
+  // Scroll list item into view
+  const listItem = document.querySelector(`.stop-item[data-stop="${stopNum}"]`);
+  if (listItem) listItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ── ROUTE LINE ────────────────────────────────────────────────────────────
+const routeCoords = tourData.features.map(f => [
+  f.geometry.coordinates[1],
+  f.geometry.coordinates[0]
+]);
+
+L.polyline(routeCoords, {
+  color: '#8b3a1e',
+  weight: 2.5,
+  opacity: 0.55,
+  dashArray: '6 5'
+}).addTo(map);
+
+// ── MARKERS ───────────────────────────────────────────────────────────────
+tourData.features.forEach(f => {
+  const p = f.properties;
+  const [lng, lat] = f.geometry.coordinates;
+  const color = phaseColors[p.phase] || '#5a5248';
+
+  const icon = L.divIcon({
+    className: '',
+    html: `<div class="ramsay-marker" style="background:${color}"><span>${p.stop}</span></div>`,
+    iconSize: [30, 30],
+    iconAnchor: [15, 30],
+    popupAnchor: [0, -32]
+  });
+
+  const marker = L.marker([lat, lng], { icon }).addTo(map);
+  marker.bindPopup(`
+    <div class="popup-title">${p.name}</div>
+    <div class="popup-date">${p.date}</div>
+    <div style="font-size:0.78rem;letter-spacing:0.06em;text-transform:uppercase;color:#9a7c3a;margin-bottom:6px;">${p.phase}</div>
+    <button class="popup-btn" onclick="selectStop(${p.stop})">Read Narrative →</button>
+  `);
+  marker.on('click', () => selectStop(p.stop));
+
+  markers.push({ stopNum: p.stop, leaflet: marker });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Two Roads to Antietam — Branch & Ramsay</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
+  <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink:        #1c1510;
+      --parchment:  #f2ead8;
+      --aged:       #e4d9be;
+      --border:     #c4b48a;
+      --branch:     #7a1a1a;
+      --branch-lt:  #b03030;
+      --ramsay:     #7a6020;
+      --ramsay-lt:  #b8902a;
+      --converge:   #2a4a2a;
+      --converge-lt:#4a7a4a;
+      --smoke:      #5a5248;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Crimson Pro', Georgia, serif;
+      background: var(--parchment);
+      color: var(--ink);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--ink);
+      color: var(--aged);
+      padding: 10px 18px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      border-bottom: 3px solid var(--border);
+      flex-shrink: 0;
+    }
+    header h1 {
+      font-family: 'IM Fell English', serif;
+      font-size: 1.35rem;
+      font-weight: 400;
+      color: var(--parchment);
+      white-space: nowrap;
+    }
+    .legend {
+      display: flex;
+      gap: 14px;
+      margin-left: auto;
+      flex-wrap: wrap;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      font-style: italic;
+      color: var(--border);
+      white-space: nowrap;
+    }
+    .legend-dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ── FILTERS ── */
+    .filters {
+      background: #2a221a;
+      display: flex;
+      gap: 0;
+      border-bottom: 2px solid var(--border);
+      flex-shrink: 0;
+    }
+    .filter-btn {
+      flex: 1;
+      padding: 7px 4px;
+      border: none;
+      background: transparent;
+      color: #9a8a6a;
+      font-family: 'Crimson Pro', serif;
+      font-size: 0.78rem;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      cursor: pointer;
+      border-right: 1px solid #3a3028;
+      transition: background 0.15s, color 0.15s;
+    }
+    .filter-btn:last-child { border-right: none; }
+    .filter-btn:hover { background: #3a3028; color: var(--aged); }
+    .filter-btn.active { color: var(--parchment); }
+    .filter-btn.active[data-filter="all"]       { background: #3a3028; }
+    .filter-btn.active[data-filter="branch"]    { background: var(--branch); }
+    .filter-btn.active[data-filter="ramsay"]    { background: var(--ramsay); }
+    .filter-btn.active[data-filter="converge"]  { background: var(--converge); }
+
+    /* ── LAYOUT ── */
+    .layout { display: flex; flex: 1; overflow: hidden; }
+
+    /* ── SIDEBAR ── */
+    #sidebar {
+      width: 340px;
+      flex-shrink: 0;
+      background: var(--aged);
+      border-right: 2px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    #stop-list {
+      overflow-y: auto;
+      max-height: 38%;
+      border-bottom: 2px solid var(--border);
+      flex-shrink: 0;
+    }
+    .stop-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 7px 12px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.12s;
+    }
+    .stop-item:hover { background: #ddd3b4; }
+    .stop-item.active { background: var(--ink); }
+    .stop-item.active .stop-name { color: var(--aged); }
+    .stop-item.active .stop-date { color: #9a8a6a; }
+    .stop-dot {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .stop-name { font-size: 0.87rem; font-weight: 600; flex: 1; line-height: 1.2; }
+    .stop-date { font-size: 0.72rem; font-style: italic; color: var(--smoke); white-space: nowrap; }
+    .stop-tag {
+      font-size: 0.62rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 1px 5px;
+      border-radius: 2px;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .tag-branch   { background: var(--branch); }
+    .tag-ramsay   { background: var(--ramsay); }
+    .tag-converge { background: var(--converge); }
+
+    /* ── NARRATIVE ── */
+    #narrative-panel {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 16px 24px;
+    }
+    .narrative-num {
+      font-family: 'IM Fell English', serif;
+      font-size: 2.2rem;
+      opacity: 0.25;
+      line-height: 1;
+      margin-bottom: 2px;
+    }
+    .narrative-name {
+      font-family: 'IM Fell English', serif;
+      font-size: 1.2rem;
+      line-height: 1.25;
+      margin-bottom: 2px;
+    }
+    .narrative-date { font-size: 0.8rem; font-style: italic; color: var(--smoke); margin-bottom: 10px; }
+    .narrative-text { font-size: 0.97rem; line-height: 1.75; color: #2a2018; }
+    .narrative-divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 14px 0;
+    }
+    .narrative-who {
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #fff;
+      padding: 2px 8px;
+      border-radius: 2px;
+      display: inline-block;
+      margin-bottom: 10px;
+    }
+    .who-branch   { background: var(--branch); }
+    .who-ramsay   { background: var(--ramsay); }
+    .who-both     { background: var(--converge); }
+    .placeholder {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      height: 100%; text-align: center;
+      opacity: 0.5; padding: 30px;
+    }
+    .placeholder .icon { font-size: 2.2rem; margin-bottom: 10px; }
+    .placeholder p { font-style: italic; font-size: 0.9rem; line-height: 1.65; }
+
+    /* ── MAP ── */
+    #map { flex: 1; z-index: 0; }
+
+    /* ── MARKERS ── */
+    .pin {
+      width: 28px; height: 28px;
+      border-radius: 50% 50% 50% 0;
+      transform: rotate(-45deg);
+      border: 2px solid rgba(0,0,0,0.4);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'IM Fell English', serif;
+      font-size: 0.72rem;
+      color: #fff;
+      cursor: pointer;
+    }
+    .pin span { transform: rotate(45deg); display: block; font-weight: bold; }
+    .pin-sm { width: 22px; height: 22px; font-size: 0.62rem; }
+    .pin-branch   { background: var(--branch-lt); }
+    .pin-ramsay   { background: var(--ramsay-lt); }
+    .pin-converge { background: var(--converge-lt); border: 2px solid var(--ink); }
+
+    /* ── POPUP ── */
+    .leaflet-popup-content-wrapper {
+      background: var(--ink); color: var(--parchment);
+      border: 1px solid var(--border); border-radius: 3px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+    }
+    .leaflet-popup-tip { background: var(--ink); }
+    .leaflet-popup-content { font-family: 'Crimson Pro', serif; font-size: 0.88rem; margin: 9px 13px; }
+    .popup-title { font-family: 'IM Fell English', serif; font-size: 1rem; color: var(--aged); margin-bottom: 2px; }
+    .popup-date  { font-style: italic; color: var(--border); font-size: 0.76rem; margin-bottom: 6px; }
+    .popup-btn {
+      display: inline-block; margin-top: 5px; padding: 3px 10px;
+      border: none; border-radius: 2px;
+      font-family: 'Crimson Pro', serif; font-size: 0.8rem; cursor: pointer; color: #fff;
+    }
+    .btn-branch   { background: var(--branch); }
+    .btn-ramsay   { background: var(--ramsay); }
+    .btn-converge { background: var(--converge); }
+
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: var(--aged); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Two Roads to Antietam</h1>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--branch-lt)"></div>Branch</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--ramsay-lt)"></div>Ramsay</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--converge-lt)"></div>Both present</div>
+  </div>
+</header>
+
+<div class="filters">
+  <button class="filter-btn active" data-filter="all">All Stops</button>
+  <button class="filter-btn" data-filter="branch">Branch Only</button>
+  <button class="filter-btn" data-filter="ramsay">Ramsay Only</button>
+  <button class="filter-btn" data-filter="converge">Convergence</button>
+</div>
+
+<div class="layout">
+  <div id="sidebar">
+    <div id="stop-list"></div>
+    <div id="narrative-panel">
+      <div class="placeholder">
+        <div class="icon">⚔</div>
+        <p>Select a stop on the map or from the list above.<br><br>
+        Green stops mark where both men were present. They came to the same fields by different roads — and had no known connection to each other.</p>
+      </div>
+    </div>
+  </div>
+  <div id="map"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// STOP DATA
+// type: "branch" | "ramsay" | "converge"
+// size: "full" | "ref"  (full = main narrative stop, ref = reference marker)
+// ─────────────────────────────────────────────────────────────────────────────
+const stops = [
+
+  // ── BRANCH STOPS ────────────────────────────────────────────────────────
+  {
+    id: "b01", type: "branch", size: "full",
+    name: "Washington, D.C.", date: "1855–1861",
+    lat: 38.8971, lng: -77.0060,
+    narrative: `<div class="narrative-who who-branch">Lawrence O'Bryan Branch</div>
+    <div class="narrative-text">Before he was a general, Lawrence O'Bryan Branch was a congressman. He served five terms in the United States House of Representatives from North Carolina between 1855 and 1861, walking these streets as a legislator and moving in the highest circles of American political life. Branch was a Princeton graduate, a lawyer, a newspaper editor, and a Democrat who believed deeply in states' rights. When North Carolina seceded in May 1861, he resigned his seat and returned south to raise troops. The irony of his journey is built into this city: he departed Washington as a servant of the government and would return — if the Confederacy had its way — as a conqueror. He never would. The man who walked these corridors of power would be dead on a Maryland battlefield within eighteen months, shot from his horse at the moment of a Confederate victory. Start your tour here. Consider what he gave up, and what he was fighting for.</div>`
+  },
+  {
+    id: "b02", type: "branch", size: "ref",
+    name: "Tredegar Iron Works, Richmond",date: "June–August 1861",
+    lat: 37.5271, lng: -77.4613,
+    narrative: `<div class="narrative-who who-branch">Branch</div>
+    <div class="narrative-text">Branch was commissioned a Brigadier General in November 1861 and given command of a North Carolina brigade that would become one of the most dependable units in A.P. Hill's famous Light Division. The Tredegar Iron Works — the industrial heart of the Confederacy — stands near where Branch's men trained and drew equipment in the summer and fall of 1861. His brigade fought in the Peninsula Campaign and was blooded at Mechanicsville and Gaines' Mill in June 1862 before marching north to join Jackson for the Second Manassas Campaign.</div>`
+  },
+  {
+    id: "b03", type: "branch", size: "ref",
+    name: "Cedar Mountain, Virginia", date: "August 9, 1862",
+    lat: 38.3754, lng: -78.0447,
+    narrative: `<div class="narrative-who who-branch">Branch</div>
+    <div class="narrative-text">Branch's Brigade was part of A.P. Hill's Division at Cedar Mountain on August 9, 1862, where Stonewall Jackson's command fought a sharp engagement against Pope's advancing Army of Virginia. Hill's Division, including Branch's Brigade, arrived on the field in the late afternoon as Jackson's forces were faltering and helped stabilize the Confederate line. It was the opening act of the Second Manassas Campaign — the campaign that would carry Branch northward through Virginia and ultimately into Maryland.</div>`
+  },
+  {
+    id: "b04", type: "branch", size: "ref",
+    name: "Bristoe Station, Virginia", date: "August 26, 1862",
+    lat: 38.7218, lng: -77.5588,
+    narrative: `<div class="narrative-who who-branch">Branch</div>
+    <div class="narrative-text">As part of Jackson's celebrated flank march that preceded Second Manassas, A.P. Hill's Division — including Branch's Brigade — descended on the Orange & Alexandria Railroad at Bristoe Station on August 26, 1862, tearing up track and destroying Federal supplies. It was a bold raid deep into Pope's rear, setting the stage for the great battle that followed. Branch's men marched hard in August heat, stripped to the essentials, living off captured Federal stores at Manassas Junction.</div>`
+  },
+  {
+    id: "b05", type: "branch", size: "ref",
+    name: "Ox Hill (Chantilly), Virginia", date: "September 1, 1862",
+    lat: 38.8756, lng: -77.4202,
+    narrative: `<div class="narrative-who who-branch">Branch</div>
+    <div class="narrative-text">The day after Second Manassas ended, Jackson's corps — including Hill's Division and Branch's Brigade — fought a fierce rear-guard action at Ox Hill (also called Chantilly) in a driving thunderstorm. The Union generals Philip Kearny and Isaac Stevens were both killed here. Branch's men were among the Confederate forces pressing the Federal withdrawal. Two days later Lee's army crossed the Potomac into Maryland, beginning the campaign that would end at Antietam.</div>`
+  },
+  {
+    id: "b06", type: "branch", size: "ref",
+    name: "White's Ford, Maryland", date: "September 5–6, 1862",
+    lat: 39.1424, lng: -77.5294,
+    narrative: `<div class="narrative-who who-branch">Branch</div>
+    <div class="narrative-text">Lee's Army of Northern Virginia crossed the Potomac into Maryland at White's Ford on September 5–6, 1862. Branch's Brigade was among the forces that waded the river into enemy territory — the first and only time Branch would set foot on northern soil. The men were ragged, barefoot in many cases, and subsisting on green corn and apples. They came across a river into a state they hoped would welcome them as liberators. Maryland did not rise.</div>`
+  },
+  {
+    id: "b07", type: "branch", size: "ref",
+    name: "Frederick, Maryland", date: "September 6–10, 1862",
+    lat: 39.4143, lng: -77.4105,
+    narrative: `<div class="narrative-who who-branch">Branch</div>
+    <div class="narrative-text">The Confederate army encamped around Frederick for several days while Lee developed his plans. It was here that Lee issued Special Orders No. 191 — the document that, when lost and found by Union troops, revealed the entire Confederate plan of campaign to McClellan. Branch's Brigade, as part of A.P. Hill's Division, was detailed to accompany Stonewall Jackson on the mission to capture the Federal garrison at Harpers Ferry. They marched out of Frederick heading west, then south — away from the main army and toward the ferry town in the mountains.</div>`
+  },
+  {
+    id: "b08", type: "branch", size: "ref",
+    name: "Martinsburg, West Virginia", date: "September 12, 1862",
+    lat: 39.4562, lng: -77.9641,
+    narrative: `<div class="narrative-who who-branch">Branch</div>
+    <div class="narrative-text">Branch's Brigade marched through Martinsburg on September 12th as part of Jackson's converging movement on Harpers Ferry. The Federal garrison at Martinsburg withdrew south toward Harpers Ferry rather than be cut off. Branch's column moved in from the north and northwest, tightening the noose around the Ferry. It was a methodical, well-executed operation — and it would put Branch's men in a desperate race on September 17th when Lee desperately needed Hill's Division at Sharpsburg.</div>`
+  },
+  {
+    id: "b09", type: "branch", size: "full",
+    name: "Harpers Ferry, West Virginia", date: "September 13–15, 1862",
+    lat: 39.3254, lng: -77.7358,
+    narrative: `<div class="narrative-who who-branch">Branch</div>
+    <div class="narrative-text">Branch's Brigade played a central role in the capture of Harpers Ferry. On September 13th his men crossed the Potomac at Boteler's Ford and marched to a position on the School House Ridge southwest of the town — cutting off the Federal garrison's escape route to the south. On the night of September 14th, Branch's Brigade worked through darkness to get artillery into position on the heights. When the bombardment opened on the morning of the 15th, the Federal garrison of nearly 12,500 men surrendered — the largest surrender of U.S. troops in the entire war. It was A.P. Hill's finest hour, and Branch was at the center of it. But there was no time to celebrate. A courier arrived with orders from Lee: the army was in desperate straits at Sharpsburg. Hill's Division must march immediately. The men who had been up all night moving artillery through the dark began a seventeen-mile forced march toward the sound of the guns.</div>`
+  },
+
+  // ── RAMSAY STOPS ────────────────────────────────────────────────────────
+  {
+    id: "r01", type: "ramsay", size: "full",
+    name: "Salisbury, North Carolina", date: "May 1861",
+    lat: 35.6710, lng: -80.4742,
+    narrative: `<div class="narrative-who who-ramsay">John Andrew Ramsay</div>
+    <div class="narrative-text">John Andrew Ramsay was 25 years old and working as a surveyor when the Civil War began. He had organized the Rowan Artillery as a peacetime company in 1858, and when Governor Ellis called the company to active service in May 1861, Ramsay was elected Captain. On May 8th he received his commission; on May 24th the ladies of Salisbury presented the company a flag and Miss Martha McRorie gave the address. Ramsay replied in a speech not exceeding one minute. The Carolina Watchman noted: "He is a man for action, not words." On May 25th the officers and men bade farewell and departed for Weldon. Ramsay would not see Salisbury again until 1865.</div>`
+  },
+  {
+    id: "r02", type: "ramsay", size: "ref",
+    name: "West Point (Eltham's Landing), Virginia", date: "May 7, 1862",
+    lat: 37.5318, lng: -76.9719,
+    narrative: `<div class="narrative-who who-ramsay">Ramsay</div>
+    <div class="narrative-text">The battery's first significant action of the Peninsula Campaign came at West Point on May 7, 1862, when Lieutenant Ramsay's section of ten-pound Parrotts took a position on the bank of the Yorktown River and opened fire on Federal transports. A Union gunboat responded, its shots walking steadily closer until the last passed just above the heads of the gunners at Ramsay's left gun. Colonel Stephen D. Lee ordered a cease fire and withdrawal. Ramsay's men had fired thirty shots and helped drive the enemy back — their first real taste of what four years of this work would feel like.</div>`
+  },
+  {
+    id: "r03", type: "ramsay", size: "ref",
+    name: "White Oak Swamp & Malvern Hill, Virginia", date: "June 30 – July 1, 1862",
+    lat: 37.3553, lng: -77.2497,
+    narrative: `<div class="narrative-who who-ramsay">Ramsay</div>
+    <div class="narrative-text">On June 30th the battery marched to White Oak Swamp, engaged the enemy's artillery, and drove them from their position — expending 450 rounds. On July 1st at Malvern Hill, General Whiting ordered Reilly and Ramsay to ride a thorough reconnaissance within 1,000 yards of the enemy's guns before reporting back. The battery then advanced into a terrific concentration of fire from five Federal batteries. After fifteen or twenty minutes General Whiting rode in and said: "Reilly, take your men out of this." Twelve men were wounded; eight horses killed, including Ramsay's. As a souvenir of the Richmond fighting, Ramsay sent home a bulletproof vest found on a dead Union soldier — made, he noted, in New Haven, Connecticut.</div>`
+  },
+  {
+    id: "r04", type: "ramsay", size: "ref",
+    name: "South Mountain, Maryland", date: "September 14, 1862",
+    lat: 39.4676, lng: -77.6388,
+    narrative: `<div class="narrative-who who-ramsay">Ramsay — Branch was NOT here (Branch was at Harpers Ferry this day)</div>
+    <div class="narrative-text">While Branch's Brigade was completing the capture of Harpers Ferry on September 14th, Ramsay's battery was at South Mountain fighting a very different battle. Arriving at 3 PM after a hard march, the battery was assigned a position in Turner's Gap by General D.H. Hill. Hill gave strict orders: do not fire unless he ordered it, or unless Confederate troops were driven past the battery. They sat under enemy fire all afternoon, unable to return it. About an hour after dark they left and encamped at the foot of the mountain. The next morning Ramsay's section was ordered to take position on the road from Sharpsburg to the stone bridge across Antietam Creek — the army was pulling back to make a stand.</div>`
+  },
+  {
+    id: "r05", type: "ramsay", size: "ref",
+    name: "Fredericksburg, Virginia", date: "December 1862",
+    lat: 38.3032, lng: -77.4605,
+    narrative: `<div class="narrative-who who-ramsay">Ramsay</div>
+    <div class="narrative-text">In December 1862 the battery was positioned on high ground near Dr. Reynolds' house, in front of the enemy at Fredericksburg, from the 11th through the 16th. The enemy did not attack this part of the Confederate lines — Burnside's assaults fell elsewhere, on Marye's Heights, with catastrophic results for the Union. The battery wintered near the town. The winter was bitter, roads nearly impassable, and it required extraordinary efforts to procure forage for the horses. Ramsay wrote home about the hardships, summarizing them with soldier's irony: "We had the heath for our barracks and revenge for our pay."</div>`
+  },
+  {
+    id: "r06", type: "ramsay", size: "ref",
+    name: "Washington & Suffolk, N.C./Virginia", date: "April–May 1863",
+    lat: 35.5468, lng: -77.0522,
+    narrative: `<div class="narrative-who who-ramsay">Ramsay</div>
+    <div class="narrative-text">In spring 1863 the battery was sent far from the main army to support operations along the North Carolina coast. From April 8th through the 16th it was heavily engaged at the fortifications around Washington, North Carolina, expending over a thousand rounds across the week. General D.H. Hill sent a personal note thanking Captain Reilly's Battery for their efficient service: "Would that you were attached to my command. I know of no men I would be so glad to have with me." The battery then moved to the Suffolk, Virginia area for operations there before the long march back north to rejoin Lee.</div>`
+  },
+  {
+    id: "r07", type: "ramsay", size: "ref",
+    name: "Gettysburg, Pennsylvania", date: "July 1–4, 1863",
+    lat: 39.8309, lng: -77.2311,
+    narrative: `<div class="narrative-who who-ramsay">Ramsay</div>
+    <div class="narrative-text">Now promoted to Captain following Reilly's elevation to Major, John Andrew Ramsay led his battery to Gettysburg as part of Henry's Battalion, attached to Longstreet's Corps. On July 2nd, on the extreme right of the Confederate line, the battery engaged the enemy and captured three ten-pound Parrotts. One of their own rifle guns burst during the engagement. On July 3rd the whole battalion was engaged again, losing four killed and twenty-three wounded. On July 17th Ramsay wrote to his cousin Julius in Salisbury with characteristic understatement: "We have been to Pennsylvania and have come out again and had a very heavy battle at Gettysburg and suffered very heavy loss."</div>`
+  },
+  {
+    id: "r08", type: "ramsay", size: "ref",
+    name: "The Wilderness, Virginia", date: "May 1864",
+    lat: 38.3140, lng: -77.7332,
+    narrative: `<div class="narrative-who who-ramsay">Ramsay</div>
+    <div class="narrative-text">Ramsay's Battery was held near Cobham's Depot until May 8, 1864, then sent forward to aid the cavalry. From the Wilderness it was thenceforward more or less engaged all along in the famous struggle from the Wilderness to the James — actively engaged May 9th, June 1st, and June 3rd. An old veteran later remembered: "Captain Ramsay wasn't scared of nothing or nobody. It was never go, but come on men." Once, after a skirmish, Ramsay was seated on a log reading a dispatch when an enemy bullet knocked it from his hand. He reached down and picked it up as calmly as if only a gust of wind had taken it away.</div>`
+  },
+  {
+    id: "r09", type: "ramsay", size: "ref",
+    name: "Petersburg, Virginia", date: "June 1864 – April 1865",
+    lat: 37.2279, lng: -77.4019,
+    narrative: `<div class="narrative-who who-ramsay">Ramsay</div>
+    <div class="narrative-text">The battery took part in the fighting around Petersburg throughout the nine-month siege. Captain Ramsay carried his Bible at all times, and he often said the 91st Psalm gave him constant help and encouragement: "He that dwelleth in the secret place of the Most High shall abide under the shadow of the Almighty... A thousand shall fall at thy side but it shall not come nigh thee." On Saturday, April 8th, 1865 — the day before the surrender — the battery fired its last shots near Appomattox Court House, repelling a cavalry charge.</div>`
+  },
+  {
+    id: "r10", type: "ramsay", size: "full",
+    name: "Appomattox Court House, Virginia", date: "April 9, 1865",
+    lat: 37.3626, lng: -78.7981,
+    narrative: `<div class="narrative-who who-ramsay">Ramsay</div>
+    <div class="narrative-text">On April 9, 1865, General Lee surrendered. The order came: bury the guns, cut the carriages and harness to pieces, mount the horses, and make your way home to Lincolnton, North Carolina. The men cut the carriages down, burned the wood, buried the guns, and left for home about noon. Some rode the same horses home that they had carried away in 1861. One poor fellow cried like a baby — he said he felt like he was burying some of his people. It was Lieutenant Jesse F. Woodard — one of the original officers from Salisbury — who was in command of the battery at its surrender. Ramsay's Battery had never lost a gun by capture in four years of war. John Andrew Ramsay returned to Salisbury, married the widow of his cousin Julius, served as Police Chief and Mayor, built the county's first public school, and was elected to the State Senate. He died January 27, 1909, at age 73.</div>`
+  },
+
+  // ── CONVERGENCE STOPS ───────────────────────────────────────────────────
+  {
+    id: "c01", type: "converge", size: "full",
+    name: "Gaines' Mill, Virginia", date: "June 27, 1862",
+    lat: 37.5982, lng: -77.2648,
+    narrative: `<div class="narrative-who who-both">Both Present — June 27, 1862</div>
+    <div class="narrative-text">Gaines' Mill was the largest and most decisive battle of the Seven Days, and both Branch and Ramsay were here — fighting on the same side, in the same assault, with no known connection to each other. Branch's Brigade was part of A.P. Hill's Light Division, which opened the Confederate attack in the late afternoon. Branch's North Carolinians advanced into fierce Federal fire north of the Chickahominy River, helping crack Union lines that had held all day against repeated assaults.</div>
+    <hr class="narrative-divider">
+    <div class="narrative-who who-ramsay">Ramsay at Gaines' Mill</div>
+    <div class="narrative-text">Reilly's Battery — with Lieutenant Ramsay commanding the right section — was ordered forward at a rapid gallop and took position about three hundred yards from the enemy's lines. In about twelve minutes the enemy's machine guns were silenced and their rifle battery crippled. The infantry rushed forward with a thrilling cheer and charged over the enemy's breastworks. The battle was over. The battery expended one hundred rounds. Colonel Law's Fourth Alabama later presented a captured Federal gun to Captain Reilly's Battery as a compliment for the splendid work done that evening. Somewhere in the smoke and noise of that assault, Branch's infantry and Ramsay's guns were fighting the same battle — strangers to each other, their families not yet connected, converging on the same objective from different directions.</div>`
+  },
+  {
+    id: "c02", type: "converge", size: "full",
+    name: "Second Manassas, Virginia", date: "August 28–31, 1862",
+    lat: 38.8126, lng: -77.5277,
+    narrative: `<div class="narrative-who who-both">Both Present — August 28–31, 1862</div>
+    <div class="narrative-text">Second Manassas was A.P. Hill's finest battle and the climax of Lee's greatest offensive campaign. Branch's Brigade and Ramsay's battery were both part of the Confederate forces that drove Pope's army from the field. Neither man knew the other. They were two North Carolinians in a vast army, converging again on the same great battle.</div>
+    <hr class="narrative-divider">
+    <div class="narrative-who who-branch">Branch at Second Manassas</div>
+    <div class="narrative-text">Branch's Brigade formed part of A.P. Hill's defensive line along an unfinished railroad cut on August 28–29, holding against repeated Federal assaults. On August 30th, as the Confederate counterattack swept the field, Hill's Division was at the center of the action. Branch's North Carolinians had fought hard across three days. When the battle ended and Lee's army moved north into Maryland, Branch's Brigade marched with them — toward Harpers Ferry, and then toward Antietam.</div>
+    <hr class="narrative-divider">
+    <div class="narrative-who who-ramsay">Ramsay at Second Manassas</div>
+    <div class="narrative-text">Ramsay's section fought across the entire campaign. Coming up to Thoroughfare Gap on August 28th, he led the battery through a storm of shot and shell after the guide abandoned them. When all was over, Colonel Walton told him: "You are the luckiest man ever God let live. If it had been one of my batteries under such a fire it would have been cut all to pieces." On August 30th, during the main engagement, Ramsay was struck on the right knee with the base of a twenty-pounder Parrott shell — but it was so far spent that it only bruised him. The battery expended over 500 rounds across the campaign.</div>`
+  },
+  {
+    id: "c03", type: "converge", size: "full",
+    name: "Antietam (Sharpsburg), Maryland", date: "September 17, 1862",
+    lat: 39.4565, lng: -77.7441,
+    narrative: `<div class="narrative-who who-both">Both Present — September 17, 1862</div>
+    <div class="narrative-text">September 17, 1862 — the bloodiest single day in American history. Branch and Ramsay were both on this field. Neither knew the other existed. One would not survive the day.</div>
+    <hr class="narrative-divider">
+    <div class="narrative-who who-branch">Branch at Antietam — His Last Hours</div>
+    <div class="narrative-text">A.P. Hill's Division had marched seventeen miles from Harpers Ferry, arriving on the Confederate right flank in the late afternoon just as the Federal IX Corps under Burnside was crossing the lower bridge and threatening to roll up Lee's line. Branch's Brigade came onto the field at a near-run, men falling out from exhaustion, and plunged directly into the counterattack. The fighting on the Confederate right was desperate and close. The Federal advance was stopped. In the confusion following the fighting, as officers gathered near the Piper cornfield, Lawrence O'Bryan Branch was struck by a Federal sharpshooter's bullet. He was killed instantly. He was 41 years old. A former United States Congressman, he died fighting against the government he had once served. His family connections to the Ramsay family would not be formed for another forty years — by his grandchildren, in peacetime.</div>
+    <hr class="narrative-divider">
+    <div class="narrative-who who-ramsay">Ramsay at Antietam — The Telescope</div>
+    <div class="narrative-text">About 3 o'clock in the afternoon — near the same hour Branch was falling on the Confederate right — Lieutenant Ramsay's section of ten-pound Parrotts was rushing ammunition to the front near Sharpsburg when they encountered General Lee himself, trying to rally straggling troops. Lee noticed Ramsay's telescope and asked: "What troops are those?" pointing toward where Captain Reilly's Battery had been positioned the day before. Ramsay drew the telescope from its case and offered it to Lee — but Lee held up his own wounded hand, fingers in bandages: "Can't use it. What troops are those?" Ramsay dismounted, adjusted the glass, and looked for himself, reporting back: the United States flag on the first group; Virginia and Confederate flags on the second. Lee identified the second as A.P. Hill's men coming from Harpers Ferry — the very division that included Branch's Brigade, rushing to save the army. "It is A.P. Hill, from Harper's Ferry." He ordered Ramsay to fire on the first group. After five well-placed shells scattered the threat, Lee smiled and said: "Well done." On the morning of September 19th, Ramsay — with one gun — fired the last shots of the entire Battle of Sharpsburg, covering the Confederate retreat across the Potomac. The telescope he looked through that afternoon is preserved today as a family heirloom, held by his descendant John Ramsay.</div>`
+  }
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MAP
+// ─────────────────────────────────────────────────────────────────────────────
+const map = L.map('map', { center: [38.5, -77.8], zoom: 7 });
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap contributors', maxZoom: 18
+}).addTo(map);
+
+// Route lines
+const branchCoords = stops
+  .filter(s => s.type === 'branch' || s.type === 'converge')
+  .sort((a,b) => a.id.localeCompare(b.id))
+  .map(s => [s.lat, s.lng]);
+const ramsayCoords = stops
+  .filter(s => s.type === 'ramsay' || s.type === 'converge')
+  .sort((a,b) => a.id.localeCompare(b.id))
+  .map(s => [s.lat, s.lng]);
+
+const branchLine = L.polyline(branchCoords, { color: '#b03030', weight: 2, opacity: 0.5, dashArray: '6 5' }).addTo(map);
+const ramsayLine = L.polyline(ramsayCoords, { color: '#b8902a', weight: 2, opacity: 0.5, dashArray: '6 5' }).addTo(map);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SIDEBAR STOP LIST
+// ─────────────────────────────────────────────────────────────────────────────
+const stopList = document.getElementById('stop-list');
+let activeId = null;
+const markerMap = {};
+
+function buildList(filter) {
+  stopList.innerHTML = '';
+  const filtered = filter === 'all' ? stops :
+    filter === 'converge' ? stops.filter(s => s.type === 'converge') :
+    stops.filter(s => s.type === filter || s.type === 'converge');
+
+  filtered.forEach(s => {
+    const item = document.createElement('div');
+    item.className = 'stop-item';
+    item.dataset.id = s.id;
+    const dotColor = s.type === 'branch' ? 'var(--branch-lt)' : s.type === 'ramsay' ? 'var(--ramsay-lt)' : 'var(--converge-lt)';
+    const tagClass = s.type === 'branch' ? 'tag-branch' : s.type === 'ramsay' ? 'tag-ramsay' : 'tag-converge';
+    const tagLabel = s.type === 'branch' ? 'B' : s.type === 'ramsay' ? 'R' : '★';
+    item.innerHTML = `
+      <div class="stop-dot" style="background:${dotColor}"></div>
+      <div class="stop-name">${s.name}</div>
+      <div class="stop-date">${s.date}</div>
+      <div class="stop-tag ${tagClass}">${tagLabel}</div>`;
+    item.addEventListener('click', () => selectStop(s.id));
+    stopList.appendChild(item);
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SELECT STOP
+// ─────────────────────────────────────────────────────────────────────────────
+function selectStop(id) {
+  activeId = id;
+  const s = stops.find(x => x.id === id);
+  if (!s) return;
+
+  document.querySelectorAll('.stop-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.id === id);
+  });
+
+  const accentColor = s.type === 'branch' ? 'var(--branch)' : s.type === 'ramsay' ? 'var(--ramsay)' : 'var(--converge)';
+  document.getElementById('narrative-panel').innerHTML = `
+    <div class="narrative-num" style="color:${accentColor}">${s.id.toUpperCase()}</div>
+    <div class="narrative-name">${s.name}</div>
+    <div class="narrative-date">${s.date}</div>
+    ${s.narrative}`;
+
+  map.setView([s.lat, s.lng], s.size === 'full' ? 11 : 10, { animate: true });
+  if (markerMap[id]) markerMap[id].openPopup();
+
+  const el = document.querySelector(`.stop-item[data-id="${id}"]`);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MARKERS
+// ─────────────────────────────────────────────────────────────────────────────
+stops.forEach(s => {
+  const pinClass = s.type === 'branch' ? 'pin-branch' : s.type === 'ramsay' ? 'pin-ramsay' : 'pin-converge';
+  const sizeClass = s.size === 'ref' ? 'pin-sm' : '';
+  const label = s.type === 'converge' ? '★' : s.id.replace(/[bcr]/,'').replace(/^0/,'');
+  const btnClass = s.type === 'branch' ? 'btn-branch' : s.type === 'ramsay' ? 'btn-ramsay' : 'btn-converge';
+
+  const icon = L.divIcon({
+    className: '',
+    html: `<div class="pin ${pinClass} ${sizeClass}"><span>${label}</span></div>`,
+    iconSize: s.size === 'ref' ? [22,22] : [28,28],
+    iconAnchor: s.size === 'ref' ? [11,22] : [14,28],
+    popupAnchor: [0, -30]
+  });
+
+  const marker = L.marker([s.lat, s.lng], { icon }).addTo(map);
+  marker.bindPopup(`
+    <div class="popup-title">${s.name}</div>
+    <div class="popup-date">${s.date}</div>
+    <button class="popup-btn ${btnClass}" onclick="selectStop('${s.id}')">Read Narrative →</button>`);
+  marker.on('click', () => selectStop(s.id));
+  markerMap[s.id] = marker;
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FILTER BUTTONS
+// ─────────────────────────────────────────────────────────────────────────────
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const filter = btn.dataset.filter;
+    buildList(filter);
+
+    stops.forEach(s => {
+      const m = markerMap[s.id];
+      const show = filter === 'all' ||
+        filter === s.type ||
+        (filter === 'converge' && s.type === 'converge') ||
+        (filter !== 'converge' && s.type === 'converge');
+      if (show) { if (!map.hasLayer(m)) map.addLayer(m); }
+      else { if (map.hasLayer(m)) map.removeLayer(m); }
+    });
+    branchLine.setStyle({ opacity: (filter === 'all' || filter === 'branch' || filter === 'converge') ? 0.5 : 0.1 });
+    ramsayLine.setStyle({ opacity: (filter === 'all' || filter === 'ramsay' || filter === 'converge') ? 0.5 : 0.1 });
+  });
+});
+
+buildList('all');
+</script>
+</body>
+</html>
