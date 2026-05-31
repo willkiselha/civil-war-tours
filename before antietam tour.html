@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Before Antietam — Branch in the Peninsula Campaign</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --lob: #8B0000;
+    --bg: #0e0c08;
+    --surface: #1a1710;
+    --border: #3a3020;
+    --gold: #c8a96e;
+    --text: #e8d9b8;
+    --muted: #9a8a6a;
+  }
+
+  body {
+    font-family: 'EB Garamond', Georgia, serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  header {
+    padding: 8px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-shrink: 0;
+    z-index: 1000;
+  }
+
+  .title-block h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.05rem;
+    font-style: italic;
+    color: var(--gold);
+    line-height: 1.1;
+  }
+  .title-block p {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-top: 1px;
+  }
+
+  .sequel-link {
+    font-size: 0.68rem;
+    color: var(--muted);
+    text-decoration: none;
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 2px;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+  .sequel-link:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+
+  .day-filter {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+  .day-filter label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-right: 4px;
+  }
+  .day-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'EB Garamond', serif;
+    font-size: 0.7rem;
+    padding: 3px 8px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+  }
+  .day-btn.active, .day-btn:hover {
+    background: var(--border);
+    color: var(--gold);
+    border-color: var(--gold);
+  }
+
+  .main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .sidebar {
+    width: 320px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .sidebar-list {
+    overflow-y: auto;
+    flex: 1;
+    padding: 8px 0;
+  }
+  .sidebar-list::-webkit-scrollbar { width: 4px; }
+  .sidebar-list::-webkit-scrollbar-track { background: var(--bg); }
+  .sidebar-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .stop-item {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.15s;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .stop-item:hover { background: rgba(200,169,110,0.05); }
+  .stop-item.active { background: rgba(200,169,110,0.1); border-left: 3px solid var(--gold); }
+
+  .stop-info { flex: 1; min-width: 0; }
+  .stop-name {
+    font-size: 0.85rem;
+    color: var(--text);
+    line-height: 1.3;
+    font-weight: 500;
+  }
+  .stop-location {
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-top: 2px;
+    font-style: italic;
+  }
+  .stop-date {
+    font-size: 0.65rem;
+    color: var(--muted);
+    margin-top: 2px;
+    letter-spacing: 0.04em;
+  }
+
+  .char-pip {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-top: 5px;
+    flex-shrink: 0;
+    background: var(--lob);
+  }
+
+  #map { flex: 1; }
+
+  .popup-panel {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 340px;
+    max-height: 60vh;
+    background: rgba(14,12,8,0.96);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    z-index: 900;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.6);
+  }
+  .popup-panel.visible { display: flex; }
+
+  .popup-header {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .popup-header-text { flex: 1; }
+  .popup-day {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+  }
+  .popup-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    color: var(--gold);
+    line-height: 1.2;
+    margin-top: 2px;
+  }
+  .popup-location {
+    font-size: 0.72rem;
+    color: var(--muted);
+    font-style: italic;
+    margin-top: 2px;
+  }
+  .popup-date-hist {
+    font-size: 0.68rem;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+  .popup-close {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .popup-close:hover { color: var(--text); }
+
+  .popup-body {
+    overflow-y: auto;
+    flex: 1;
+    padding: 12px 14px;
+  }
+  .popup-body::-webkit-scrollbar { width: 3px; }
+  .popup-body::-webkit-scrollbar-thumb { background: var(--border); }
+
+  .narrative-section { margin-bottom: 12px; }
+  .narrative-label {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .narrative-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+  .narrative-text {
+    font-size: 0.82rem;
+    line-height: 1.65;
+    color: var(--text);
+  }
+  .narrative-text.fiction {
+    font-style: italic;
+    color: #c8b890;
+  }
+
+  .visitor-box {
+    background: rgba(200,169,110,0.06);
+    border: 1px solid rgba(200,169,110,0.2);
+    border-radius: 2px;
+    padding: 8px 10px;
+    margin-top: 8px;
+  }
+  .visitor-label {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--gold);
+    margin-bottom: 4px;
+  }
+  .visitor-text {
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .novel-box {
+    background: rgba(139,0,0,0.08);
+    border: 1px solid rgba(139,0,0,0.3);
+    border-radius: 2px;
+    padding: 8px 10px;
+    margin-top: 8px;
+  }
+  .novel-label {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #c8a96e;
+    margin-bottom: 4px;
+  }
+  .novel-text {
+    font-size: 0.78rem;
+    color: #c8b890;
+    line-height: 1.5;
+    font-style: italic;
+  }
+
+  .leaflet-control-attribution {
+    background: rgba(14,12,8,0.85) !important;
+    color: var(--muted) !important;
+    font-size: 0.6rem !important;
+  }
+  .leaflet-control-attribution a { color: var(--gold) !important; }
+  .leaflet-control-zoom a {
+    background: var(--surface) !important;
+    color: var(--gold) !important;
+    border-color: var(--border) !important;
+  }
+  .leaflet-control-zoom a:hover { background: var(--border) !important; }
+
+  @media (max-width: 700px) {
+    .sidebar { display: none; }
+    .popup-panel { width: calc(100vw - 24px); right: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="title-block">
+    <h1>Before Antietam</h1>
+    <p>Branch in the New Bern &amp; Peninsula Campaigns · 1861–1862</p>
+  </div>
+  <div class="day-filter">
+    <label>Phase</label>
+    <button class="day-btn active" onclick="filterDay(0, this)">All</button>
+    <button class="day-btn" onclick="filterDay(1, this)">NC</button>
+    <button class="day-btn" onclick="filterDay(2, this)">Richmond</button>
+    <button class="day-btn" onclick="filterDay(3, this)">Seven Days</button>
+    <button class="day-btn" onclick="filterDay(4, this)">Kingsland</button>
+  </div>
+  <a class="sequel-link" href="branch_tour_app.html">Continue Tour: Maryland Campaign →</a>
+</header>
+
+<div class="main">
+  <div class="sidebar">
+    <div class="sidebar-list" id="sidebar-list"></div>
+  </div>
+  <div style="position:relative;flex:1;">
+    <div id="map" style="width:100%;height:100%;"></div>
+    <div class="popup-panel" id="popup-panel">
+      <div class="popup-header">
+        <div class="popup-header-text">
+          <div class="popup-day" id="popup-day"></div>
+          <div class="popup-name" id="popup-name"></div>
+          <div class="popup-location" id="popup-location"></div>
+          <div class="popup-date-hist" id="popup-date"></div>
+        </div>
+        <button class="popup-close" onclick="closePopup()">×</button>
+      </div>
+      <div class="popup-body" id="popup-body"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const map = L.map('map', { center: [36.5, -78.0], zoom: 7, zoomControl: true });
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
+  maxZoom: 19
+}).addTo(map);
+
+const phaseLabels = {
+  1: 'North Carolina',
+  2: 'Richmond Approach',
+  3: 'Seven Days Battles',
+  4: 'Kingsland'
+};
+
+const stops = [
+  {
+    id:'pen_nc_01', phase:1, order:1,
+    name:'Halifax, North Carolina',
+    location:'Halifax, NC',
+    address:'Halifax, NC 27839',
+    date_historical:'Pre-war — 1820s–1861',
+    category:'origin',
+    narrative_documented:'Lawrence O\'Bryan Branch was born in Enfield, NC in 1820 and grew up in Halifax County — the heart of North Carolina planter society. His family was prominent, slaveholding, and politically connected. Halifax gave Branch his identity: Southern gentleman, lawyer, politician, heir to a culture he would one day die defending. He attended Princeton, practiced law, and built the political career that carried him to Washington as a Congressman. Everything that follows begins here.',
+    narrative_fiction:'',
+    novel_note:'',
+    visitor_info:'Halifax is a remarkably preserved colonial town. The Halifax Historic District contains 18th and 19th century buildings and is where North Carolina first declared independence from Britain in 1776 — fitting origin for a man who would fight for independence again 85 years later.',
+    coords:[-77.5897, 36.3268]
+  },
+  {
+    id:'pen_nc_02', phase:1, order:2,
+    name:'Raleigh — State Capitol',
+    location:'Raleigh, NC',
+    address:'1 E Edenton St, Raleigh, NC 27601',
+    date_historical:'1861',
+    category:'commission',
+    narrative_documented:'When North Carolina seceded from the Union on May 20, 1861, Branch resigned his Congressional seat and returned to Raleigh. He joined the Raleigh Rifles as a private — a deliberate statement of democratic solidarity — but was rapidly promoted through political connections. Within weeks he was a Colonel commanding a regiment. Soon after, a Brigadier General. He had almost no military experience. His first assignment was to defend the North Carolina coastline around New Bern — ports critical for Confederate trade with Europe.',
+    narrative_fiction:'',
+    novel_note:'In Chapter 1 of The Ground Remains, Branch reflects on his rapid ascent through the ranks and his awareness that career military men resented him for it. This is where that ascent began — not on a battlefield but in a statehouse.',
+    visitor_info:'The North Carolina State Capitol is open to visitors. The legislative chamber where secession was debated and voted upon still stands. A short walk from here Branch would have said goodbye to the civilian life he had known.',
+    coords:[-78.6382, 35.7796]
+  },
+  {
+    id:'pen_nc_03', phase:1, order:3,
+    name:'New Bern — Branch\'s First Battle',
+    location:'New Bern, NC',
+    address:'New Bern, NC 28560',
+    date_historical:'March 14, 1862',
+    category:'battlefield',
+    narrative_documented:'The Battle of New Bern on March 14, 1862 was Branch\'s first major command — and a humiliating defeat. General Ambrose Burnside landed a large Union force and overwhelmed Branch\'s outnumbered defenders. Branch was outmanned and outgunned, but critics noted significant gaps in his defensive line before the battle even started. One soldier in the 37th North Carolina wrote home that they were "defeated through General Branch\'s bad management." Branch himself acknowledged his inexperience. Jefferson Davis ordered him to take his troops north to consolidate Confederate forces in Virginia. His coastal defense career was over.',
+    narrative_fiction:'This is Branch at his lowest point as a military commander. He failed publicly, lost the North Carolina coastline to Burnside, and retreated northward knowing that his men and his superiors doubted him. The arc of his redemption at Second Manassas and Antietam begins in this defeat.',
+    novel_note:'Branch\'s New Bern defeat is referenced throughout The Ground Remains as the formative wound of his military career — the failure he carried with him and worked to redeem.',
+    visitor_info:'New Bern is a beautiful historic town at the confluence of the Neuse and Trent Rivers. The Tryon Palace historic site is excellent. The Civil War Museum in New Bern covers the Battle of New Bern thoroughly. The battlefield itself has limited preservation but interpretive markers exist.',
+    coords:[-77.0441, 35.1085]
+  },
+  {
+    id:'pen_va_01', phase:2, order:1,
+    name:'Gordonsville, Virginia',
+    location:'Gordonsville, VA',
+    address:'Gordonsville, VA 22942',
+    date_historical:'Spring 1862',
+    category:'consolidation',
+    narrative_documented:'After New Bern, Jefferson Davis ordered Branch to move his troops north to Gordonsville, Virginia — the railroad junction east of Charlottesville where Confederate forces were consolidating. This is where Branch\'s brigade became part of A.P. Hill\'s newly formed Light Division — five brigades that would become one of the most effective fighting forces in the Confederate army. Branch went from commanding a coastal defense to serving under one of the war\'s most aggressive generals. His education was about to begin in earnest.',
+    narrative_fiction:'',
+    novel_note:'In Chapter 1 of The Ground Remains, A.P. Hill mentions Gordonsville as the assembly point. Branch arrived here a defeated general and left as part of a fighting machine that would define the Seven Days Battles.',
+    visitor_info:'Gordonsville\'s Exchange Hotel Civil War Medical Museum is one of the finest small Civil War museums in Virginia — it appears in the Maryland Campaign tour as well. The railroad junction that made Gordonsville strategically critical is still evident in the town\'s layout.',
+    coords:[-78.1841, 38.1368]
+  },
+  {
+    id:'pen_va_02', phase:2, order:2,
+    name:'Hanover Courthouse',
+    location:'Hanover, VA',
+    address:'Hanover Courthouse, VA 23069',
+    date_historical:'May 27, 1862',
+    category:'battlefield',
+    narrative_documented:'Branch\'s first engagement under A.P. Hill was another defeat — the Battle of Hanover Courthouse on May 27, 1862, against Union General Fitz John Porter. Again he was undermanned, again he was criticized. One soldier wrote that Branch "believed a citizen who told him the enemy force was small, when no person else did." His brigade would not see significant action again until June 26 at Beaver Dam Creek. But something was changing. Branch was learning from failure in ways that would matter enormously in the weeks ahead.',
+    narrative_fiction:'',
+    novel_note:'',
+    visitor_info:'Hanover Courthouse is a small preserved Virginia county seat with antebellum courthouse buildings. Limited battlefield preservation but the rural landscape is largely unchanged from 1862.',
+    coords:[-77.3441, 37.7468]
+  },
+  {
+    id:'pen_va_03', phase:2, order:3,
+    name:'American Civil War Museum — Historic Tredegar',
+    location:'Richmond, VA',
+    address:'500 Tredegar St, Richmond, VA 23219',
+    date_historical:'1861–1862',
+    category:'museum',
+    narrative_documented:'Tredegar Iron Works was the industrial heart of the Confederacy — producing the artillery, rails, and munitions that armed Branch\'s batteries and supplied his brigade. Richmond became the Confederate capital and the center of the war machine Branch would serve. The museum here is the finest starting point for understanding the Confederate war effort before following Branch\'s military campaign.',
+    narrative_fiction:'',
+    novel_note:'LOB\'s ivory handled dueling pistols — carried through every engagement including Kingsland — are on display at this museum. The same pistols he raised against Solomon and Collins at the river ford. The same pistols he placed on his travel trunk the night before the Kingsland mission.',
+    visitor_info:'Allow 2-3 hours. The museum does not flinch from the moral complexity of the Confederate cause. Excellent context before driving the Seven Days battlefield sites. LOB\'s ivory pistols are in the collection here.',
+    coords:[-77.4605, 37.5317]
+  },
+  {
+    id:'pen_7days_01', phase:3, order:1,
+    name:'Beaver Dam Creek Battlefield',
+    location:'Mechanicsville, VA',
+    address:'Mechanicsville, VA 23111',
+    date_historical:'June 26, 1862',
+    category:'battlefield',
+    narrative_documented:'Branch\'s first major battle under A.P. Hill — and a disaster largely of his own making. Lee\'s plan required Branch to move in coordination with Jackson\'s arrival from the Shenandoah Valley. Jackson was six hours late. Branch failed to communicate the delay to Hill. Hill commenced the attack anyway based on incomplete information — a decision Branch\'s communication failure forced. The Confederates suffered heavy losses with nothing gained. One author wrote: "Branch had proved to be a missing link in the chain of command." This was Branch the military novice — exposed, humiliated, and finally beginning to learn.',
+    narrative_fiction:'So as of June 26, 150 years ago, things were not looking too good for the military career of Lawrence O\'Bryan Branch. After a rapid ascent in rank, the realities of his inexperience were becoming obvious not only to himself but also to others. But stick with our good fellow here a bit more. He and his men will make a name for themselves militarily after all.',
+    novel_note:'',
+    visitor_info:'The battlefield is now largely suburban Mechanicsville but a small preserved section exists within the Richmond National Battlefield Park system. Interpretive markers explain the failed coordination that cost so many lives. The context — Branch as a failing novice — makes everything that follows at Second Manassas and Antietam more meaningful.',
+    coords:[-77.3566, 37.6054]
+  },
+  {
+    id:'pen_7days_02', phase:3, order:2,
+    name:"Gaines's Mill Battlefield",
+    location:'Cold Harbor, VA',
+    address:'Cold Harbor Rd, Mechanicsville, VA 23111',
+    date_historical:'June 27, 1862',
+    category:'battlefield',
+    narrative_documented:"The first battle where both Branch and Ramsay fought on the same field — though they almost certainly did not know each other. Branch's brigade lost 401 men in two hours of frontal assault against strong Union defenses at Boatswain's Swamp — 'badly battered,' as one account put it. Meanwhile Ramsay's Reilly Artillery entered the Seven Days fighting for the first time, positioning in a risky salient and raining fire on the Union's strongest point. Minutes later, Hood's Texans broke through at exactly that weakened spot. Both Branch and Ramsay played significant roles in this Confederate victory — though overshadowed by Hood and Longstreet. Gaines's Mill saw the largest concentration of soldiers on a single battlefield in the entire Civil War.",
+    narrative_fiction:'',
+    novel_note:'In The Ground Remains, the Gaines\'s Mill battlefield is the first place both Branch and Ramsay shared the same ground — unknowingly, as strangers. Their connection exists only in the genealogical research of their descendant 160 years later.',
+    visitor_info:"Part of the Richmond National Battlefield Park. The Cold Harbor visitor center provides excellent context. Stand at Boatswain's Swamp and picture Branch's infantry advancing through the trees while Ramsay's guns fired from an exposed forward position — on this same ground, on the same afternoon, strangers to each other.",
+    coords:[-77.3449, 37.5988]
+  },
+  {
+    id:'pen_7days_03', phase:3, order:3,
+    name:'Glendale Battlefield — Willis Methodist Church',
+    location:'Henrico County, VA',
+    address:'Long Bridge Rd, Richmond, VA 23231',
+    date_historical:'June 30, 1862',
+    category:'battlefield',
+    narrative_documented:"Branch's brigade suffered its heaviest losses of the Peninsula Campaign here — 425 casualties. His North Carolinians emerged from the woods and slammed into Joe Hooker's Union troops at the crossroads clearing around Willis Methodist Church. The line surged back and forth in hand-to-hand combat. Hooker's line wavered — then closed up and gave them murderous fire. They were rolled back. General Porter Alexander called Glendale the single point in the entire war where the South might have demoralized the Union into quitting — had it succeeded. It did not. Longstreet had little praise for Branch's performance, reflecting the contempt career officers held for political generals. Branch's brigade suffered 425 casualties. He was learning — at enormous cost.",
+    narrative_fiction:"June 28th — the day after Gaines's Mill — all aggression came to a temporary close. This may have been the first opportunity for Branch to try to make sense of the battle, of the campaign, and of the war. There must have been thoughts of having made the wrong decision, of having bitten off more than he could chew. He no doubt experienced guilt for those who had died as a result of his mistakes. He no doubt also experienced dread for the days that were to follow.",
+    novel_note:'',
+    visitor_info:"Preserved as part of the Richmond National Battlefield Park. Willis Methodist Church stood at the crossroads clearing — the epicenter of the fighting. The hand-to-hand nature of the combat here was unusual even by Civil War standards. This is where Branch's men bled most heavily in the Peninsula Campaign.",
+    coords:[-77.3272, 37.4801]
+  },
+  {
+    id:'pen_7days_04', phase:3, order:4,
+    name:'Malvern Hill Battlefield',
+    location:'Henrico County, VA',
+    address:'Malvern Hill, Richmond National Battlefield Park, VA',
+    date_historical:'July 1, 1862',
+    category:'battlefield',
+    narrative_documented:"Branch was held in reserve on July 1 — the Peninsula Campaign ended for him here without firing a shot. Lee's thought was that any fighting on July 1 should be borne by commands that had not fought the day before. Longstreet and A.P. Hill, who had done all the fighting on June 30th, would be held in reserve. And with that the Peninsula Campaign came to a close for Branch and his brigade. But the day was not quiet for everyone. Ramsay's Rowan Battery fought intensely here, losing a horse in a direct artillery duel with the legendary Union artillerist General H.J. Hunt. Jackson had pressed Reilly's battery to fire prematurely from an exposed position — an order that nearly killed them all.",
+    narrative_fiction:'',
+    novel_note:'In The Ground Remains, Branch is in reserve at Malvern Hill — which is what gives him the opportunity to lead the Kingsland scouting mission. His enforced idleness on July 1 is what puts him across the James River on his ancestral land. The novel\'s central discovery exists because Branch did not fight at Malvern Hill.',
+    visitor_info:"One of the war's most dramatic Union defensive victories — massed Union artillery shattered Confederate assault after Confederate assault. The hilltop position is well preserved with sweeping views. Stand here and look across the James River. Kingsland — the Christopher Branch plantation — is just across the water. LOB Branch fought within sight of his ancestral land and almost certainly did not know it.",
+    coords:[-77.3180, 37.4327]
+  },
+  {
+    id:'pen_kings_01', phase:4, order:1,
+    name:"Kingsland — Christopher Branch's Plantation",
+    location:'Henrico County, VA',
+    address:'James River, Henrico County, VA',
+    date_historical:'1624 — and July 1, 1862',
+    category:'ancestral',
+    narrative_documented:"Christopher Branch left England in 1624 aboard the London Merchant, accompanied by his wife and four indentured servants. He settled in Henrico County on the James River on a 250-acre tobacco plantation called Kingsland — just across the river from Malvern Hill, within eyesight of the battlefield. Christopher Branch became a member of the House of Burgesses during the very decades when Virginia's laws transformed African indentured servants into permanent hereditary slaves. LOB Branch — fighting 238 years later to preserve that system — was fighting on and near the land where those values were first forged in his bloodline. He almost certainly did not know it.",
+    narrative_fiction:"What if that day on July 1st, LOB Branch was in reserve and crossed the river to his ancestral homeland? What if he came across something — perhaps documents stowed in the foundation of an old mill — that provided clear evidence that his ancestor had been present at the engineering of the racial system he now fought to protect? What if LOB Branch had learned that day that his cultural values, the ones he was dying to protect, were all false — the product of a calculated design to keep the privileged class privileged? The ground remains. And we move through it. Then the next generation does the same.",
+    novel_note:'This is the central location of The Ground Remains. The mill at Kingsland — discovered by Branch, Solomon Batista, and Private Collins on their scouting mission — contains the grave of Nathaniel Bacon, buried here in 1676 by Solomon\'s ancestor John Batista after Berkeley\'s forces killed him and needed his body to disappear. A Union artillery shell cracks open the foundation. What emerges has been waiting 186 years.',
+    visitor_info:"The Kingsland site is across the James River from Malvern Hill. The physical proximity is the point — stand at Malvern Hill and look across the water toward where the plantation stood. The ground between them held more history than either man crossing it on July 1, 1862 could have known.",
+    coords:[-77.3050, 37.4150]
+  },
+  {
+    id:'pen_kings_02', phase:4, order:2,
+    name:'The James River Ford',
+    location:'Henrico County, VA',
+    address:'James River, Henrico County, VA',
+    date_historical:'July 1–2, 1862',
+    category:'crossing',
+    narrative_documented:"A.P. Hill ordered Branch to cross the James and reconnoiter the south bank — to assess whether Confederate forces could flank McClellan's position at Harrison's Landing. Branch volunteered because he knew the land: his ancestors had owned it. He selected fifteen men from those who knew the area, including a free Black man named Solomon Batista and a young private named Edward Collins who vouched for him. They crossed at a shallow ford where the current deposited silt at the bottom — a submerged bridge known only to locals. They crossed without incident. What they found on the other side changed everything.",
+    narrative_fiction:'The northern banks of the James River were muddy and steep. LOB was covered in wetness and filth as he took the hand of Solomon who assisted him out of the current of the river. The package was protected from the elements tucked within the General\'s document satchel, its strap draped across his left shoulder. Collins was the last to ascend the banks.',
+    novel_note:'The river crossing scene is the opening of the chapter "A Reunited Scouting Party" in The Ground Remains. The three men cross back with the package — and nothing is the same afterward.',
+    visitor_info:"Stand at the James River and look south. Branch's men waded across here in the summer of 1862, following the remembered geography of land their general's family had owned two centuries before. The river looks today much as it did then.",
+    coords:[-77.3350, 37.4450]
+  }
+];
+
+const phaseColor = '#8B0000';
+
+function makeIcon(stop) {
+  const isFinal = stop.category === 'ancestral' || stop.category === 'crossing';
+  const size = isFinal ? 30 : 24;
+  const html = `
+    <div style="
+      width:${size}px;height:${size}px;
+      background:${phaseColor};
+      border-radius:50% 50% 50% 0;
+      transform:rotate(-45deg);
+      border:2px solid rgba(255,255,255,${isFinal?0.8:0.4});
+      display:flex;align-items:center;justify-content:center;
+      box-shadow:0 2px 6px rgba(0,0,0,0.5);
+    ">
+      <span style="transform:rotate(45deg);color:white;font-size:8px;font-weight:bold;font-family:serif;">
+        ${stop.order}
+      </span>
+    </div>`;
+  return L.divIcon({ html, className:'', iconSize:[size,size], iconAnchor:[size/2,size] });
+}
+
+let markers = [];
+let activeStop = null;
+
+function buildMarkers(phaseFilter) {
+  markers.forEach(m => map.removeLayer(m.marker));
+  markers = [];
+  if (window.routeLine) map.removeLayer(window.routeLine);
+
+  const filtered = phaseFilter === 0 ? stops : stops.filter(s => s.phase === phaseFilter);
+
+  filtered.forEach(stop => {
+    const m = L.marker([stop.coords[1], stop.coords[0]], { icon: makeIcon(stop) });
+    m.addTo(map);
+    m.on('click', () => showStop(stop));
+    markers.push({ stop, marker: m });
+  });
+
+  if (filtered.length > 1) {
+    const latlngs = filtered.map(s => [s.coords[1], s.coords[0]]);
+    window.routeLine = L.polyline(latlngs, {
+      color: '#c8a96e',
+      weight: 3,
+      opacity: 0.85
+    }).addTo(map);
+    window.routeLine.bringToFront();
+  }
+}
+
+function showStop(stop) {
+  activeStop = stop.id;
+  document.querySelectorAll('.stop-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.id === stop.id);
+  });
+  map.panTo([stop.coords[1], stop.coords[0]]);
+
+  const phaseNum = stop.phase;
+  document.getElementById('popup-day').textContent = `${phaseLabels[phaseNum]} · Stop ${stop.order}`;
+  document.getElementById('popup-name').textContent = stop.name;
+  document.getElementById('popup-location').textContent = stop.location;
+  document.getElementById('popup-date').textContent = stop.date_historical;
+
+  let body = '';
+
+  if (stop.narrative_documented) {
+    body += `<div class="narrative-section">
+      <div class="narrative-label">Historical Record</div>
+      <div class="narrative-text">${stop.narrative_documented}</div>
+    </div>`;
+  }
+
+  if (stop.narrative_fiction) {
+    body += `<div class="narrative-section">
+      <div class="narrative-label">Narrative</div>
+      <div class="narrative-text fiction">${stop.narrative_fiction}</div>
+    </div>`;
+  }
+
+  if (stop.novel_note) {
+    body += `<div class="novel-box">
+      <div class="novel-label">✦ The Ground Remains</div>
+      <div class="novel-text">${stop.novel_note}</div>
+    </div>`;
+  }
+
+  if (stop.visitor_info) {
+    body += `<div class="visitor-box">
+      <div class="visitor-label">▶ Visitor Notes</div>
+      <div class="visitor-text">${stop.visitor_info}</div>
+    </div>`;
+  }
+
+  document.getElementById('popup-body').innerHTML = body;
+  document.getElementById('popup-panel').classList.add('visible');
+}
+
+function closePopup() {
+  document.getElementById('popup-panel').classList.remove('visible');
+  activeStop = null;
+  document.querySelectorAll('.stop-item').forEach(el => el.classList.remove('active'));
+}
+
+function buildSidebar(phaseFilter) {
+  const list = document.getElementById('sidebar-list');
+  const filtered = phaseFilter === 0 ? stops : stops.filter(s => s.phase === phaseFilter);
+  let html = '';
+  let currentPhase = null;
+
+  filtered.forEach(stop => {
+    if (stop.phase !== currentPhase) {
+      currentPhase = stop.phase;
+      html += `<div style="padding:6px 14px 4px;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--gold);border-top:1px solid var(--border);margin-top:${currentPhase===1?0:4}px;">${phaseLabels[currentPhase]}</div>`;
+    }
+    html += `
+      <div class="stop-item" data-id="${stop.id}" onclick="sidebarClick('${stop.id}')">
+        <div class="char-pip"></div>
+        <div class="stop-info">
+          <div class="stop-name">${stop.name}</div>
+          <div class="stop-location">${stop.location}</div>
+          <div class="stop-date">${stop.date_historical}</div>
+        </div>
+      </div>`;
+  });
+
+  list.innerHTML = html;
+}
+
+function sidebarClick(id) {
+  const stop = stops.find(s => s.id === id);
+  if (stop) showStop(stop);
+}
+
+let currentPhase = 0;
+function filterDay(phase, btn) {
+  currentPhase = phase;
+  document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  buildMarkers(phase);
+  buildSidebar(phase);
+  closePopup();
+
+  if (phase === 0) {
+    map.setView([36.5, -78.0], 7);
+  } else {
+    const phaseStops = stops.filter(s => s.phase === phase);
+    if (phaseStops.length) {
+      const lats = phaseStops.map(s => s.coords[1]);
+      const lngs = phaseStops.map(s => s.coords[0]);
+      map.fitBounds([
+        [Math.min(...lats)-0.15, Math.min(...lngs)-0.15],
+        [Math.max(...lats)+0.15, Math.max(...lngs)+0.15]
+      ]);
+    }
+  }
+}
+
+buildMarkers(0);
+buildSidebar(0);
+</script>
+</body>
+</html>
