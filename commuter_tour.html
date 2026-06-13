@@ -225,7 +225,7 @@ const DAYS = [
    arrive:'~4pm', depart:null, duration:'Afternoon/Evening',
    coords:[37.5540,-77.4593],
    eyebrow:'Day 3 · Late Afternoon',
-   body:'Hollywood Cemetery holds 18,000 Confederate soldiers — the largest Confederate burial ground in the country — plus Jefferson Davis and J.E.B. Stuart. The Confederate Capitol building, where Branch once served as a U.S. Congressman, stands a short ride away.',
+   body:'Hollywood Cemetery holds 18,000 Confederate soldiers — the largest Confederate burial ground in the country — plus Jefferson Davis and J.E.B. Stuart. The Confederate Capitol building stands a short ride away — the seat of the government Branch took up arms to defend after resigning his U.S. Congressional seat in Washington in 1861.',
    logistics:[
      {icon:'📍',text:'Hollywood Cemetery: 412 S Cherry St, Richmond. Open daily 8am–5pm. ~1.5 miles from The Jefferson.'},
      {icon:'🏛️',text:'Virginia State Capitol (former Confederate Capitol): 1000 Bank St, Richmond.'}
@@ -321,14 +321,15 @@ const DAYS = [
    bikeNote:'The unfinished railroad cut where Branch held his line can be reached on foot from the Deep Cut parking area.',
    warn:null},
 
-  {id:'bristow-museum', name:'Bristow Station & Manassas Museum', mode:'tour',
+  {id:'bristow-museum', name:'Bristoe Station Battlefield & Manassas Museum', mode:'tour',
    arrive:'~3pm', depart:null, duration:'1–2 hours',
    coords:[38.7240,-77.5430],
    eyebrow:'Day 5 · Afternoon',
-   body:'The Manassas Museum in Old Town tells the region\'s full war story with strong original collections. Bristow Station (October 14, 1863) was a later engagement in this same corridor where Confederate forces ambushed Union pursuers — a site that fits naturally into an afternoon after the main Second Manassas visit.',
+   body:'Bristoe Station carries two distinct Civil War moments, both essential to understanding what happened at Second Manassas. On the evening of August 26, 1862, Jackson\'s corps — including Branch\'s brigade — completed a remarkable 55-mile flanking march through Thoroughfare Gap and struck the Orange & Alexandria Railroad here, wrecking two trains and tearing up track. Jackson then detached a brigade to seize the massive Union supply depot at Manassas Junction overnight, forcing Pope to abandon his Rappahannock defensive line entirely and setting the stage for the main battle two days later. Branch\'s men were in the thick of this march — it was one of the most audacious movements of the entire war. A second, separate engagement here on October 14, 1863 saw Confederate forces ambush Union pursuers on the same ground. The Manassas Museum in Old Town tells the full regional story.',
    logistics:[
-     {icon:'🏛️',text:'Manassas Museum: 9101 Prince William St, Manassas VA. Excellent local civil war collection.'},
-     {icon:'🏛️',text:'Bristow Station Battlefield Heritage Park: 10708 Bristow Rd, Bristow VA. Managed by Prince William County.'}
+     {icon:'🏛️',text:'Bristoe Station Battlefield Heritage Park: 10501 Tenth Alabama Way, Bristow VA 20136. Phone: (703) 366-3049. Managed by Prince William County. The park preserves both the August 1862 and October 1863 battle grounds.'},
+     {icon:'🏛️',text:'Manassas Museum: 9101 Prince William St, Manassas VA. Covers the full regional Civil War story including the railroad operations that made this corridor so strategically vital.'},
+     {icon:'🚗',text:'Bristoe Station is ~7 miles from Manassas Station — include it in your arranged driving tour with Second Manassas rather than as a separate afternoon trip.'}
    ],
    bikeNote:null, warn:null},
 ]},
@@ -374,18 +375,33 @@ const DAYS = [
 ]},
 
 {id:7, label:'Day 7', title:'Antietam', events:[
-  {id:'co-canal-ride', name:'C&O Canal Towpath — Harpers Ferry to Antietam', mode:'bike',
+  {id:'co-canal-ride', name:'Route Option A — C&O Canal Towpath to Antietam', mode:'bike',
    arrive:null, depart:'~8:00am', duration:'~12 miles · 1.5–2 hours',
    coords:[39.4557,-77.7446],
-   eyebrow:'Day 7 · Morning · Bicycle · C&O Canal Towpath',
-   body:'Depart Harpers Ferry by 8am and ride the C&O Canal Towpath north along the Potomac — 12 flat, traffic-free miles of crushed limestone, the signature ride of the entire tour. This path traces the very ground over which Lee\'s army crossed the Potomac in September 1862. Pass Boteler\'s Ford near Shepherdstown, where Confederate stragglers crossed under Union fire on September 19 — two days after the battle that killed Branch. Exit the towpath at the Burnside Bridge Road area to reach Antietam.',
+   eyebrow:'Day 7 · Morning · Bicycle · C&O Canal Towpath · OPTION A',
+   body:'Option A: Depart Harpers Ferry by 8am and ride the C&O Canal Towpath north along the Potomac — 12 flat, traffic-free miles of crushed limestone. This path traces the ground over which Lee\'s army crossed the Potomac in September 1862. Pass Boteler\'s Ford near Shepherdstown, where Confederate stragglers crossed under Union fire on September 19. Exit the towpath at the Burnside Bridge Road area to reach Antietam. See Option B below for the more historically immersive — and adventurous — alternative.',
    logistics:[
      {icon:'🚲',text:'Start at the Harpers Ferry railroad bridge crossing. Follow towpath north ~12 miles to Lock 38 / Antietam Creek Aqueduct area. Flat crushed limestone — suitable for hybrid or gravel bike.'},
      {icon:'📍',text:'Exit towpath at Burnside Bridge Rd and follow signs east to Antietam National Battlefield Visitor Center.'},
-     {icon:'⏱️',text:'Allow 1.5–2 hours riding, plus optional stop at Shepherdstown (~8 miles) — the town where Lee\'s wounded flooded after the battle.'}
+     {icon:'⏱️',text:'Allow 1.5–2 hours riding, plus optional stop at Shepherdstown (~8 miles) where Lee\'s wounded flooded after the battle.'}
    ],
-   bikeNote:'The most historically resonant ride of the tour. At Boteler\'s Ford near Shepherdstown, you cross the retreat corridor of Lee\'s Army of Northern Virginia.',
+   bikeNote:'At Boteler\'s Ford near Shepherdstown, you cross the retreat corridor of Lee\'s Army of Northern Virginia.',
    warn:null},
+
+  {id:'ap-hill-march', name:'Route Option B — A.P. Hill\'s March to Antietam', mode:'bike',
+   arrive:null, depart:'~7:30am', duration:'~17 miles · 3–4 hours · includes river ford',
+   coords:[39.3850,-77.7600],
+   eyebrow:'Day 7 · Morning · Bicycle · A.P. Hill\'s Route · OPTION B · Adventure Route',
+   body:'On September 17, 1862, A.P. Hill\'s Light Division departed Harpers Ferry at 7:30am and covered 17 miles in roughly seven hours to arrive at Antietam just in time to shatter Burnside\'s assault on the Confederate right — saving Lee\'s army. Branch\'s brigade marched second in the column, behind Gregg and ahead of Archer. Hill took the Harpers Ferry Road north, roughly parallel to the Potomac, before crossing at Blackford\'s Ford (also known as Boteler\'s Ford) into Maryland and pressing on to the battlefield. When Hill reported to Lee, the general reportedly exclaimed "General Hill, I was never so glad to see you." Branch was dead within hours of arriving. Riding this route means fording the Potomac — shallow at Boteler\'s Ford in summer conditions but a genuine crossing. Check water levels before attempting. The American Battlefield Trust and NPS Antietam have published maps of Hill\'s route.',
+   logistics:[
+     {icon:'🚲',text:'Depart Harpers Ferry 7:30am following Harpers Ferry Road (WV Rt 340 / Halltown area) north along the Potomac. The route runs roughly parallel to the river for several miles before turning toward Boteler\'s Ford.'},
+     {icon:'🌊',text:'Boteler\'s Ford (Blackford\'s Ford): the Potomac crossing point, approximately 1 mile north of Shepherdstown. In summer/fall low-water conditions typically knee-to-thigh deep — fordable on foot with bike in hand. Check current USGS Potomac water levels before attempting: waterdata.usgs.gov.'},
+     {icon:'📍',text:'After crossing, follow Trego Road / Harpers Ferry Road north into Sharpsburg. The route enters the battlefield from the south via what is now Harpers Ferry Road — the same road Branch\'s brigade used to reach the Confederate right flank.'},
+     {icon:'🏛️',text:'NPS Antietam Visitor Center has a hand-drawn map of Hill\'s route available at the front desk. The battlefield\'s Harpers Ferry Road tour stop marks where Branch\'s, Gregg\'s, and Archer\'s brigades formed their attack line.'},
+     {icon:'⚠️',text:'Total distance: ~17 miles. Allow 3–4 hours including the ford crossing. Bring water shoes or sandals for the crossing, dry bags for gear, and check river conditions the evening before.'}
+   ],
+   bikeNote:'Branch Avenue on the Antietam battlefield is named for LOB Branch. It marks the ground his brigade crossed in their final attack — arriving at the end of a 17-mile march, within hours of his death.',
+   warn:'Fording the Potomac requires advance planning. Check USGS water gauge at Shepherdstown (station 01617800) — safe fording typically requires a gauge reading under 4.5 feet. Do not attempt in high water. This is an adventure route, not a casual ride.'},
 
   {id:'antietam-battlefield', name:'Antietam National Battlefield', mode:'battle',
    arrive:'~10:00am', depart:null, duration:'3–4 hours',
