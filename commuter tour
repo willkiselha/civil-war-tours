@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Following Branch by Rail & Bicycle</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0e0c08;--surface:#1a1710;--surface2:#221f18;--border:#3a3020;
+  --gold:#c8a96e;--gold-dim:#8a6f3e;--text:#e8d9b8;--muted:#9a8a6a;
+  --train:#2a6aaa;--bus:#3a7a3a;--bike:#8a5a1a;--tour:#6a3a8a;--lodge:#1a5a5a;--battle:#8B0000;
+}
+body{font-family:'EB Garamond',Georgia,serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+/* HEADER */
+header{padding:9px 16px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.h-title{display:flex;flex-direction:column}
+.h-eye{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold-dim);margin-bottom:1px}
+.h-main{font-family:'Playfair Display',Georgia,serif;font-size:1.1rem;font-weight:700;color:var(--gold);line-height:1.1}
+.h-sub{font-size:.7rem;color:var(--muted);font-style:italic;margin-top:2px}
+.legend{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.lpill{display:flex;align-items:center;gap:4px;font-size:.65rem;color:var(--muted);white-space:nowrap}
+.ldot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+/* LAYOUT */
+.main{display:flex;flex:1;overflow:hidden;position:relative}
+
+/* TIMELINE SIDEBAR */
+.sidebar{width:340px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.day-tabs{display:flex;overflow-x:auto;border-bottom:1px solid var(--border);flex-shrink:0;scrollbar-width:none}
+.day-tabs::-webkit-scrollbar{display:none}
+.dtab{padding:7px 11px;font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);cursor:pointer;white-space:nowrap;border:none;border-bottom:2px solid transparent;background:none;font-family:'EB Garamond',Georgia,serif;transition:color .2s,border-color .2s}
+.dtab:hover{color:var(--text)}
+.dtab.active{color:var(--gold);border-bottom-color:var(--gold)}
+
+.timeline{flex:1;overflow-y:auto;padding:12px 0 16px;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.timeline::-webkit-scrollbar{width:4px}
+.timeline::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+/* TIMELINE EVENTS */
+.t-event{display:flex;gap:0;padding:0 14px;position:relative;cursor:pointer}
+.t-event:hover .t-card{background:var(--surface2)}
+.t-event.active .t-card{background:var(--surface2);border-left-color:var(--gold)}
+
+/* Left column: time + line */
+.t-left{width:56px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;padding-top:4px}
+.t-time{font-size:.7rem;color:var(--gold-dim);text-align:center;white-space:nowrap;line-height:1.2;min-height:28px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start}
+.t-time .arr{font-size:.62rem;color:var(--muted)}
+.t-time .dep{font-size:.72rem;font-weight:500;color:var(--gold-dim)}
+.t-vline{width:2px;flex:1;min-height:8px}
+.t-dot{width:11px;height:11px;border-radius:50%;border:2px solid;flex-shrink:0;z-index:1;background:var(--bg)}
+
+/* Right card */
+.t-card{flex:1;margin-left:10px;padding:8px 10px;border-left:2px solid transparent;border-radius:2px;margin-bottom:2px;transition:background .15s,border-color .15s}
+.t-label{font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px;font-family:sans-serif}
+.t-name{font-family:'Playfair Display',Georgia,serif;font-size:.9rem;color:var(--text);line-height:1.2}
+.t-meta{font-size:.68rem;color:var(--muted);margin-top:3px;line-height:1.4}
+.t-dur{font-size:.62rem;color:var(--muted);font-style:italic;margin-top:1px}
+
+/* CONNECTOR (between events) */
+.t-connector{display:flex;gap:0;padding:0 14px 0;align-items:stretch;height:28px}
+.t-conn-left{width:56px;flex-shrink:0;display:flex;justify-content:center}
+.t-conn-line{width:2px;flex:1}
+.t-conn-right{flex:1;margin-left:10px;display:flex;align-items:center}
+.t-conn-label{font-size:.62rem;color:var(--muted);font-style:italic;padding-left:4px}
+
+/* DETAIL PANEL */
+.detail{position:absolute;bottom:0;left:340px;right:0;max-height:45%;background:var(--surface);border-top:1px solid var(--border);overflow-y:auto;padding:14px 18px 18px;z-index:500;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.detail::-webkit-scrollbar{width:4px}
+.detail::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.detail.hidden{display:none}
+.d-close{float:right;background:none;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer;margin-left:8px;line-height:1}
+.d-close:hover{color:var(--text)}
+.d-eye{font-size:.65rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gold-dim);margin-bottom:3px}
+.d-title{font-family:'Playfair Display',Georgia,serif;font-size:1.15rem;font-weight:700;color:var(--gold);margin-bottom:5px;line-height:1.2}
+.d-timing{display:flex;gap:16px;margin-bottom:8px;flex-wrap:wrap}
+.d-chip{font-size:.72rem;padding:3px 10px;border-radius:20px;border:1px solid;display:inline-flex;align-items:center;gap:5px}
+.d-body{font-size:.88rem;line-height:1.65;color:var(--text);margin-bottom:8px}
+.d-box{background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:9px 12px;margin-top:6px}
+.d-box-title{font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-dim);margin-bottom:5px}
+.d-row{display:flex;gap:7px;align-items:flex-start;margin-bottom:4px;font-size:.8rem;line-height:1.4;color:var(--muted)}
+.d-icon{flex-shrink:0}
+.d-warn{margin-top:7px;padding:5px 9px;border-left:3px solid #8a6400;font-size:.78rem;color:#c8a030;background:rgba(138,100,0,.1)}
+.d-bike{margin-top:7px;padding:5px 9px;border-left:3px solid var(--bike);font-size:.78rem;color:var(--muted);font-style:italic;background:rgba(138,90,26,.08)}
+
+/* MAP */
+#map{flex:1;background:#0a0906}
+
+/* MAP LEGEND */
+.mleg{position:absolute;bottom:10px;right:10px;background:rgba(26,23,16,.93);border:1px solid var(--border);border-radius:3px;padding:7px 11px;z-index:400;font-size:.67rem;color:var(--muted)}
+.mleg-title{font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-dim);margin-bottom:4px}
+.mleg-row{display:flex;align-items:center;gap:6px;margin-bottom:2px}
+.mleg-line{width:20px;height:3px;border-radius:2px;flex-shrink:0}
+.mleg-dash{width:20px;height:0;border-top:3px dashed;flex-shrink:0;opacity:.75}
+
+/* Leaflet overrides */
+.leaflet-popup-content-wrapper{background:var(--surface);border:1px solid var(--border);border-radius:3px;box-shadow:0 4px 18px rgba(0,0,0,.6);color:var(--text);font-family:'EB Garamond',Georgia,serif}
+.leaflet-popup-tip{background:var(--surface)}
+.pop-title{font-family:'Playfair Display',Georgia,serif;font-size:.92rem;font-weight:700;color:var(--gold);margin-bottom:3px}
+.pop-meta{font-size:.72rem;color:var(--muted)}
+.pop-time{font-size:.72rem;color:var(--gold-dim);margin-top:2px}
+
+@media(max-width:640px){
+  .sidebar{width:100%;position:absolute;z-index:600;height:42%;bottom:0;border-right:none;border-top:1px solid var(--border)}
+  #map{height:58%}
+  .detail{left:0}
+  .legend{display:none}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="h-title">
+    <div class="h-eye">Civil War Transit Tour</div>
+    <div class="h-main">Following Branch by Rail &amp; Bicycle</div>
+    <div class="h-sub">Washington D.C. → Antietam · 7 Days · Amtrak · VRE · MARC · Virginia Breeze · Bicycle</div>
+  </div>
+  <div class="legend">
+    <div class="lpill"><div class="ldot" style="background:var(--train)"></div>Train</div>
+    <div class="lpill"><div class="ldot" style="background:var(--bus)"></div>Bus</div>
+    <div class="lpill"><div class="ldot" style="background:var(--bike)"></div>Bicycle</div>
+    <div class="lpill"><div class="ldot" style="background:var(--tour)"></div>Arranged</div>
+    <div class="lpill"><div class="ldot" style="background:var(--lodge)"></div>Lodging</div>
+    <div class="lpill"><div class="ldot" style="background:var(--battle)"></div>Battlefield</div>
+  </div>
+</header>
+
+<div class="main">
+  <div class="sidebar">
+    <div class="day-tabs" id="dayTabs"></div>
+    <div class="timeline" id="timeline"></div>
+  </div>
+  <div id="map"></div>
+  <div class="mleg">
+    <div class="mleg-title">Route</div>
+    <div class="mleg-row"><div class="mleg-line" style="background:var(--train)"></div>Train</div>
+    <div class="mleg-row"><div class="mleg-line" style="background:var(--bus)"></div>Bus</div>
+    <div class="mleg-row"><div class="mleg-line" style="background:var(--bike)"></div>Bicycle</div>
+    <div class="mleg-row"><div class="mleg-dash" style="border-color:var(--tour)"></div>Arranged</div>
+  </div>
+  <div class="detail hidden" id="detail"></div>
+</div>
+
+<script>
+const C = {train:'#2a6aaa',bus:'#3a7a3a',bike:'#8a5a1a',tour:'#6a3a8a',lodge:'#1a5a5a',battle:'#8B0000'};
+const E = {train:'🚂',bus:'🚌',bike:'🚲',tour:'🚗',lodge:'🏨',battle:'⚔️'};
+
+// ─── FULL ITINERARY DATA ───────────────────────────────────────────────────────
+// Each event: id, name, mode, arrive, depart, duration, coords, eyebrow, body, logistics[], bikeNote, warn
+const DAYS = [
+{id:1, label:'Day 1', title:'Washington D.C.', events:[
+  {id:'dc-arrive', name:'Washington D.C. — Arrival at Union Station', mode:'lodge',
+   arrive:null, depart:null, duration:null,
+   coords:[38.8974,-77.0066],
+   eyebrow:'Day 1 · Arrival',
+   body:'Union Station is your base and your gateway — the same rail hub that funneled Union troops and materiel south throughout the Civil War. Arrive by afternoon, check in nearby, and orient yourself for the week ahead. LOB Branch served as a U.S. Congressman from this city before resigning to join the Confederacy in 1861.',
+   logistics:[
+     {icon:'🏨',text:'Recommended lodging: Hotel Zena (1155 14th St NW), Kimpton George Hotel (15 E St NW), or Hyatt Place Capitol Hill — all within easy walk of Union Station.'},
+     {icon:'🚲',text:'Bikes: store at hotel overnight. Amtrak accepts full-size bikes as checked baggage ($20/bike, requires bike bag) or in coach on Northeast Regional. Confirm bike reservation at booking.'},
+     {icon:'🗺️',text:'Afternoon: National Mall, National Portrait Gallery (Branch portrait in Civil War collection), or the Capitol building Branch once served.'}
+   ],
+   bikeNote:'Capital Crescent Trail and Rock Creek Park paths offer excellent city cycling from Union Station area.',
+   warn:null},
+]},
+
+{id:2, label:'Day 2', title:'Ashland, VA', events:[
+  {id:'dc-ashland-train', name:'Union Station → Ashland, VA', mode:'train',
+   arrive:null, depart:'9:27am', duration:'~1h 55m · arr. 11:02am',
+   coords:[37.7596,-77.4812],
+   eyebrow:'Day 2 · Morning · Amtrak Northeast Regional #95',
+   body:'Board the southbound Northeast Regional at Union Station. Train 95 (Mon–Fri) departs at 9:27am and arrives Ashland at 11:02am — just under two hours through Alexandria, Fredericksburg, and Quantico. The RF&P rail corridor you travel is the same line Branch\'s troops moved along in 1862. Ashland\'s 1923 station sits on Center Street, where trains still run down the center of town past shade trees and antebellum homes.',
+   logistics:[
+     {icon:'🚂',text:'Train: Amtrak NE Regional #95. Departs Union Station 9:27am (Mon–Fri). Arrives Ashland (ASD) 11:02am. Weekend alt: Train #195 departs 9:27am Sat/Sun arriving 11:12am.'},
+     {icon:'💰',text:'Tickets from ~$13. Book at amtrak.com — select Washington DC (WAS) → Ashland (ASD).'},
+     {icon:'🚲',text:'Bikes: bring in a bike bag in the coach car. Reserve bike space at booking. Folding bikes travel as carry-on with no reservation.'},
+     {icon:'🏨',text:'Check in: Henry Clay Inn, 114 N Railroad Ave — directly across from the Amtrak platform. Historic 1901 inn.'}
+   ],
+   bikeNote:null, warn:'Train #95 is Mon–Fri only. Weekends use Train #195 (same departure time). Confirm at amtrak.com when booking.'},
+
+  {id:'ashland-explore', name:'Afternoon: Hanover Court House & Seven Days Area', mode:'bike',
+   arrive:'~11:15am', depart:null, duration:'Afternoon',
+   coords:[37.7447,-77.3464],
+   eyebrow:'Day 2 · Afternoon · Bicycle or arranged transport',
+   body:'Hanover Court House (May 27, 1862) was Branch\'s first real battlefield command — and a painful early lesson. Surprised by Fitz John Porter\'s Union force, Branch\'s brigade was routed. The historic courthouse building is a National Historic Landmark, the same courthouse where Patrick Henry argued the Parson\'s Cause. Ride 11 miles by bike via Old Telegraph Road, or arrange a car tour for the Seven Days battle sites (Beaver Dam Creek, Gaines\' Mill) further south.',
+   logistics:[
+     {icon:'🚲',text:'~11 miles Ashland → Hanover Courthouse via Old Telegraph/Courthouse Rd. Mostly flat, allow 50–60 min each way. Return before dark.'},
+     {icon:'🚗',text:'For Seven Days sites (Beaver Dam Creek, Gaines\' Mill, Cold Harbor): arrange a half-day driving tour. Cold Harbor Visitor Center: 5515 Anderson-Wright Dr, Mechanicsville.'},
+     {icon:'📍',text:'Hanover Courthouse: 7507 Library Drive, Hanover VA 23069.'}
+   ],
+   bikeNote:'Return ride to Ashland via Studley Road — rolling terrain, very pleasant in late afternoon.',
+   warn:null},
+]},
+
+{id:3, label:'Day 3', title:'Richmond, VA', events:[
+  {id:'ashland-richmond-train', name:'Ashland → Richmond Main Street Station', mode:'train',
+   arrive:null, depart:'~11:12am or ~4:21pm', duration:'~25 min',
+   coords:[37.5333,-77.4284],
+   eyebrow:'Day 3 · Morning · Amtrak Northeast Regional',
+   body:'A short hop south on the same Northeast Regional line. Take the mid-morning train from Ashland (dep. ~11:02am arr. Richmond ~11:40am) or the afternoon train (dep. Ashland ~4:21pm) depending on how you pace Day 2. Richmond Main Street Station is a stunning 1901 Beaux-Arts terminal, now beautifully restored. The Jefferson Hotel — your lodging — has been open since 1895 and is a National Historic Landmark.',
+   logistics:[
+     {icon:'🚂',text:'Amtrak NE Regional: Ashland (ASD) → Richmond Main Street (RVM). ~25 min. Morning train departs Ashland ~11:02am, arrives Richmond ~11:40am. Afternoon train departs ~4:21pm.'},
+     {icon:'🏨',text:'Check in: The Jefferson Hotel, 101 W Franklin St, Richmond VA 23220. Book well in advance — one of the South\'s finest historic hotels.'},
+     {icon:'🚲',text:'Richmond has excellent bike infrastructure. The Canal Walk bikeway links Main Street Station to Tredegar and beyond.'}
+   ],
+   bikeNote:null, warn:null},
+
+  {id:'tredegar', name:'American Civil War Museum — Tredegar Iron Works', mode:'bike',
+   arrive:'~1pm', depart:null, duration:'2–3 hours',
+   coords:[37.5381,-77.4525],
+   eyebrow:'Day 3 · Afternoon · ~1 mile from Jefferson Hotel by bike',
+   body:'The Tredegar Iron Works manufactured most of the Confederacy\'s artillery — the guns Branch\'s men depended on throughout the Peninsula Campaign. The museum holds the most comprehensive collection of Civil War artifacts in existence and tells the war from multiple perspectives. The 1865 photographic archive is extraordinary, and the outdoor ruins of the original ironworks complex extend along the James River.',
+   logistics:[
+     {icon:'📍',text:'480 Tredegar St, Richmond VA 23219. On the James River at the original ironworks site.'},
+     {icon:'🚲',text:'~1 mile from The Jefferson via the Canal Walk bikeway — flat, scenic, following the Kanawha Canal alongside the James River.'},
+     {icon:'🕐',text:'Allow 2–3 hours minimum. Open daily.'}
+   ],
+   bikeNote:'James River Heritage Trail extends east and west from Tredegar — excellent evening ride.',
+   warn:null},
+
+  {id:'richmond-sites', name:'Hollywood Cemetery & Richmond Civil War Sites', mode:'bike',
+   arrive:'~4pm', depart:null, duration:'Afternoon/Evening',
+   coords:[37.5540,-77.4593],
+   eyebrow:'Day 3 · Late Afternoon',
+   body:'Hollywood Cemetery holds 18,000 Confederate soldiers — the largest Confederate burial ground in the country — plus Jefferson Davis and J.E.B. Stuart. The Confederate Capitol building, where Branch once served as a U.S. Congressman, stands a short ride away.',
+   logistics:[
+     {icon:'📍',text:'Hollywood Cemetery: 412 S Cherry St, Richmond. Open daily 8am–5pm. ~1.5 miles from The Jefferson.'},
+     {icon:'🏛️',text:'Virginia State Capitol (former Confederate Capitol): 1000 Bank St, Richmond.'}
+   ],
+   bikeNote:null, warn:null},
+]},
+
+{id:4, label:'Day 4', title:'Orange, VA', events:[
+  {id:'richmond-charlottesville-bus', name:'Richmond → Charlottesville via Virginia Breeze', mode:'bus',
+   arrive:null, depart:'Check virginiabreeze.org', duration:'~1h 30m',
+   coords:[38.0293,-78.4767],
+   eyebrow:'Day 4 · Morning · Virginia Breeze Bus',
+   body:'The Virginia Breeze intercity bus connects Richmond Main Street Station west to Charlottesville along I-64, serving as your first transit hop toward Orange County. The Breeze is a state-supported motorcoach with Wi-Fi and power outlets. Charlottesville is your transfer point for the Amtrak train north to Culpeper. Coordinate your Richmond departure to allow a comfortable connection.',
+   logistics:[
+     {icon:'🚌',text:'Virginia Breeze: Book at virginiabreeze.org. Departs Richmond Main Street Station area. ~1.5 hr to Charlottesville. Check current schedule online — multiple daily departures.'},
+     {icon:'🚲',text:'Bikes on Virginia Breeze must be boxed or bagged and count as luggage. Space is limited — confirm with operator when booking.'},
+     {icon:'⏱️',text:'Aim for a morning departure from Richmond to allow time to catch the afternoon Amtrak to Culpeper.'}
+   ],
+   bikeNote:null, warn:'Confirm current Virginia Breeze times at virginiabreeze.org before booking — seasonal schedules vary.'},
+
+  {id:'charlottesville-culpeper-train', name:'Charlottesville → Culpeper', mode:'train',
+   arrive:null, depart:'Check amtrak.com', duration:'~45 min',
+   coords:[38.4722,-77.9933],
+   eyebrow:'Day 4 · Midday · Amtrak Northeast Regional or Cardinal',
+   body:'From Charlottesville, board Amtrak north to Culpeper Station — one of Virginia\'s finest small-town depots, built in 1904 on the original Orange & Alexandria Railroad. This is the very rail line the Union and Confederate armies fought over repeatedly in 1862–1863. Branch\'s brigade and Ramsay\'s battery both used this corridor. The station is your gateway to Orange County.',
+   logistics:[
+     {icon:'🚂',text:'NE Regional serves Culpeper 2x daily. Cardinal serves Culpeper Mon/Wed/Sat northbound, Tue/Thu/Sun southbound. Book at amtrak.com — Charlottesville (CVS) → Culpeper (CLP).'},
+     {icon:'📍',text:'Culpeper Station: 109 South Commerce Street, Culpeper VA.'},
+     {icon:'🚲',text:'Checked baggage service at Culpeper for bikes on most trains — confirm at booking.'}
+   ],
+   bikeNote:null, warn:'The Cardinal runs only 3x/week. Northeast Regional offers daily flexibility. A Wednesday departure from Richmond → Charlottesville → Culpeper works perfectly with weekday TOOT connector service.'},
+
+  {id:'culpeper-orange-transit', name:'Culpeper → Orange via TOOT Connector · Inn at Willow Grove', mode:'bus',
+   arrive:'arrange pickup', depart:'TOOT departs Culpeper ~8:15am / hourly to 4:15pm', duration:'~45 min to Orange',
+   coords:[38.2458,-78.1130],
+   eyebrow:'Day 4 · Afternoon · TOOT Orange/Culpeper Connector + Inn Pickup · WEEKDAYS ONLY',
+   body:'The TOOT (Town of Orange Transit) Orange/Culpeper Connector runs hourly on weekdays between Culpeper Station and the Town of Orange. The Inn at Willow Grove sits 4 miles south of town on Route 15 — call ahead and the inn\'s concierge will arrange pickup from the nearest bus stop, or directly from Culpeper Station. The inn\'s full-service concierge is noted for handling exactly this kind of arrangement. Willow Grove itself is a Forbes Four-Star 18th-century estate where Civil War trenches and a cannonball were found during its restoration.',
+   logistics:[
+     {icon:'🚌',text:'TOOT Orange/Culpeper Connector: Weekdays only. Hourly departures from Culpeper ~8:15am, 9:15am, 10:15am... through 4:15pm. Fare ~$0.50 each way. Phone: (540) 672-8668.'},
+     {icon:'📞',text:'Inn at Willow Grove: (540) 317-1206. Request pickup from Orange Town stop or Culpeper Station. Call 24+ hours ahead.'},
+     {icon:'🏨',text:'Inn at Willow Grove: 14079 Plantation Way, Orange VA 22960. Forbes Four-Star. French-pressed coffee and beignets at your door each morning. Full spa on property.'}
+   ],
+   bikeNote:'If cycling from Orange Town to the inn: 4 miles south on Route 15 — manageable on a road shoulder with moderate traffic.',
+   warn:'⚠️ WEEKDAYS ONLY — TOOT operates Mon–Fri only. This is a hard constraint. Plan your Richmond departure on a Tuesday or Wednesday to arrive at Culpeper on Wednesday, giving you a full day in Orange before the Thursday return to catch the train to Manassas.'},
+
+  {id:'gordonsville-cedar-mountain', name:'Gordonsville & Cedar Mountain Battlefield', mode:'tour',
+   arrive:'~4pm', depart:null, duration:'Remaining afternoon',
+   coords:[38.1381,-78.1840],
+   eyebrow:'Day 4 · Late Afternoon · Arranged driving tour',
+   body:'Gordonsville was a critical Confederate rail junction — where the Virginia Central and Orange & Alexandria Railroads crossed — and a key staging ground before Second Manassas. Cedar Mountain (August 9, 1862) was where Stonewall Jackson\'s corps, including Branch, clashed with Pope\'s Army of Virginia in a fierce preliminary engagement. Arrange a local guide through the inn\'s concierge for the late afternoon.',
+   logistics:[
+     {icon:'🚗',text:'Arrange through the inn concierge: half-day driving tour, Gordonsville → Cedar Mountain. Both sites within 20 miles of the inn.'},
+     {icon:'🏛️',text:'Gordonsville Exchange Hotel Civil War Museum: 400 N Main St, Gordonsville — a Confederate hospital, now a museum.'},
+     {icon:'📍',text:'Cedar Mountain Battlefield: 9465 General Winder Rd, Rapidan VA 22733.'}
+   ],
+   bikeNote:null, warn:null},
+]},
+
+{id:5, label:'Day 5', title:'Manassas, VA', events:[
+  {id:'orange-culpeper-return', name:'Orange → Culpeper Station', mode:'bus',
+   arrive:null, depart:'TOOT departs Orange ~7:15am or 8:15am', duration:'~45 min · WEEKDAYS ONLY',
+   coords:[38.4722,-77.9933],
+   eyebrow:'Day 5 · Early Morning · TOOT Connector + Amtrak · WEEKDAYS ONLY',
+   body:'Rise early for coffee and beignets, then arrange a 7am inn pickup to the Orange TOOT stop. The connector returns you to Culpeper Station in time for a mid-morning Amtrak north to Manassas. The first TOOT departure from Orange is ~7:15am, arriving Culpeper ~8:00am — giving you time to catch the mid-morning train.',
+   logistics:[
+     {icon:'🚌',text:'TOOT Orange/Culpeper Connector: First departure Orange ~7:15am, arrives Culpeper ~8:00am. Reservations recommended: (540) 341-3464. 24–48 hour notice required.'},
+     {icon:'📞',text:'Alternative: Inn concierge can arrange a car directly to Culpeper Station if TOOT timing doesn\'t align.'},
+   ],
+   bikeNote:null, warn:'⚠️ WEEKDAYS ONLY. Must be Thursday to use TOOT. If your Day 4 arrival was Wednesday, Day 5 is Thursday — you\'re on schedule.'},
+
+  {id:'culpeper-manassas-train', name:'Culpeper → Manassas', mode:'train',
+   arrive:null, depart:'~10am (NE Regional northbound)', duration:'~40 min · arr. ~10:40am',
+   coords:[38.7510,-77.4760],
+   eyebrow:'Day 5 · Late Morning · Amtrak Northeast Regional',
+   body:'The northbound Northeast Regional carries you from Culpeper to Manassas in roughly 40 minutes, cutting across the Prince William County Piedmont through country Branch\'s army retreated through after Second Manassas. Manassas station sits just west of Old Town Manassas, within easy walking distance of the Civil War Museum.',
+   logistics:[
+     {icon:'🚂',text:'Amtrak NE Regional northbound: Culpeper (CLP) → Manassas (MSS). ~40 min. Check amtrak.com for current northbound morning times — two trains daily.'},
+     {icon:'🏨',text:'Lodging: Manassas Junction Bed & Breakfast, 9311 Prescott Ave — a restored 1902 Queen Anne Eastlake home in the historic district, walking distance to the station and museum. The property sits adjacent to the Norfolk Southern rail line; train-spotting from the dining room bay window is a feature, not a bug. Phone: (703) 216-7803. Web: manassasjunction.com.'},
+     {icon:'🍳',text:'Full organic gourmet breakfast included, with seasonal produce from the inn\'s own garden. Rooms have four-poster beds and clawfoot tubs.'}
+   ],
+   bikeNote:null, warn:null},
+
+  {id:'second-manassas', name:'Second Manassas National Battlefield', mode:'tour',
+   arrive:'~11am', depart:null, duration:'3–4 hours',
+   coords:[38.8133,-77.5244],
+   eyebrow:'Day 5 · Midday–Afternoon · Arranged driving tour from Manassas',
+   body:'Second Manassas (August 28–31, 1862) was Branch\'s finest hour. His North Carolina brigade held the left of Jackson\'s line along an unfinished railroad cut, repelling repeated Union assaults before Longstreet\'s massive flank attack crushed Pope\'s army. This was the engagement that cemented Branch\'s reputation. The battlefield is vast — a vehicle is essential. The Visitor Center\'s film and exhibits are excellent context before driving the ground.',
+   logistics:[
+     {icon:'🏛️',text:'Manassas National Battlefield Park: 6511 Sudley Rd, Manassas VA 20109. Visitor Center open daily.'},
+     {icon:'🚗',text:'Rent a car from Enterprise or Hertz in Manassas for the afternoon, or arrange a licensed guide from the hotel.'},
+     {icon:'🚲',text:'Henry Hill Loop Trail (~1 mile) is bikeable — good supplement to a driving tour for the core of the field.'}
+   ],
+   bikeNote:'The unfinished railroad cut where Branch held his line can be reached on foot from the Deep Cut parking area.',
+   warn:null},
+
+  {id:'bristow-museum', name:'Bristow Station & Manassas Museum', mode:'tour',
+   arrive:'~3pm', depart:null, duration:'1–2 hours',
+   coords:[38.7240,-77.5430],
+   eyebrow:'Day 5 · Afternoon',
+   body:'The Manassas Museum in Old Town tells the region\'s full war story with strong original collections. Bristow Station (October 14, 1863) was a later engagement in this same corridor where Confederate forces ambushed Union pursuers — a site that fits naturally into an afternoon after the main Second Manassas visit.',
+   logistics:[
+     {icon:'🏛️',text:'Manassas Museum: 9101 Prince William St, Manassas VA. Excellent local civil war collection.'},
+     {icon:'🏛️',text:'Bristow Station Battlefield Heritage Park: 10708 Bristow Rd, Bristow VA. Managed by Prince William County.'}
+   ],
+   bikeNote:null, warn:null},
+]},
+
+{id:6, label:'Day 6', title:'Harpers Ferry, WV', events:[
+  {id:'manassas-dc-vre', name:'Manassas → Union Station via VRE', mode:'train',
+   arrive:null, depart:'5:29am / 6:24am / 7:29am / 8:09am', duration:'~70 min · arr. 6:40–9:20am',
+   coords:[38.8974,-77.0066],
+   eyebrow:'Day 6 · Morning · VRE Manassas Line · WEEKDAYS ONLY',
+   body:'Virginia Railway Express (VRE) Manassas Line commuter trains depart Manassas Station northbound in the morning for Union Station. Four departures: 5:29am (arr. 6:40am), 6:24am (arr. 7:35am), 7:29am (arr. 8:40am), or 8:09am (arr. 9:20am). Take the 7:29am departure to arrive Union Station at 8:40am with comfortable time to transfer to either MARC or wait for the afternoon Capitol Limited.',
+   logistics:[
+     {icon:'🚂',text:'VRE Manassas Line (Train 332): departs Manassas 7:29am, arrives Union Station 8:40am. Weekdays only. Tickets at vre.org.'},
+     {icon:'🚲',text:'Full-size and folding bikes permitted on all VRE trains — no reservation needed.'},
+     {icon:'🔄',text:'At Union Station: transfer to MARC Brunswick Line (westbound to Harpers Ferry) or wait for Amtrak Capitol Limited (departs ~4pm).'}
+   ],
+   bikeNote:null, warn:'⚠️ VRE runs WEEKDAYS ONLY, rush-hour direction only in mornings (northbound to DC). This leg must be a Friday morning — arriving Harpers Ferry Friday evening is ideal for a weekend at the battlefield.'},
+
+  {id:'dc-harpers-ferry', name:'Union Station → Harpers Ferry, WV', mode:'train',
+   arrive:null, depart:'MARC ~4:55pm (Mon–Thu), ~1:30pm (Fri) · OR Amtrak ~4:00pm daily', duration:'~90 min · arr. ~5:15–6:30pm',
+   coords:[39.3244,-77.7311],
+   eyebrow:'Day 6 · Afternoon · MARC Brunswick Line OR Amtrak Capitol Limited',
+   body:'Two options to Harpers Ferry from Union Station. Option A — MARC Brunswick Line: departs Union Station at 4:55pm Mon–Thu, 1:30pm Friday, arriving Harpers Ferry approximately 6:30pm. Full-size bikes permitted. $6 fare. Option B — Amtrak Capitol Limited: departs Union Station daily at approximately 4:00pm, arrives Harpers Ferry approximately 5:15pm. Runs 7 days a week — the more flexible choice. If you took the early VRE, consider spending the wait time exploring DC before the afternoon train.',
+   logistics:[
+     {icon:'🚂',text:'MARC Brunswick Line westbound: departs Union Station 4:55pm (Mon–Thu) or 1:30pm (Fri). Arrives Harpers Ferry ~6:30pm. Fare ~$6. Full-size bikes permitted on all cars. mta.maryland.gov/marc-train.'},
+     {icon:'🚂',text:'Amtrak Capitol Limited: departs Union Station ~4:00pm daily. Arrives Harpers Ferry ~5:15pm. Book at amtrak.com — station code HFY. More reliable for weekends.'},
+     {icon:'🏨',text:'Lodging: The Town\'s Inn (179 High St, Harpers Ferry) — a beautifully restored historic inn in lower town, walkable from the station. Advnture Hostel is a budget option with excellent bike storage.'}
+   ],
+   bikeNote:'MARC Brunswick Line advertises full-size bike access on all cars — a major advantage for this tour.',
+   warn:null},
+
+  {id:'harpers-ferry-town', name:'Harpers Ferry Historic Town', mode:'bike',
+   arrive:'~5:30–6:30pm', depart:null, duration:'Evening',
+   coords:[39.3239,-77.7296],
+   eyebrow:'Day 6 · Evening · On foot and bicycle',
+   body:'Harpers Ferry sits at the dramatic confluence of the Potomac and Shenandoah Rivers. John Brown\'s 1859 raid on the Federal Armory here was a direct prologue to the war Branch fought. In September 1862, while Ramsay was at South Mountain with Lee\'s main army, Branch\'s brigade was part of Stonewall Jackson\'s force that captured Harpers Ferry on September 15 — nearly 13,000 Union prisoners, the largest surrender of Union forces in the war.',
+   logistics:[
+     {icon:'🏛️',text:'Harpers Ferry National Historical Park: Visitor Center at 171 Shoreline Drive. Lower Town is pedestrian-only — take the shuttle or walk down from Cavalier Heights lot.'},
+     {icon:'🚲',text:'Lock bikes outside the pedestrian zone. C&O Canal Towpath begins here — a traffic-free crushed limestone path along the Potomac.'},
+     {icon:'🍽️',text:'Dinner: Cannonball Deli and The Anvil Restaurant in lower town.'}
+   ],
+   bikeNote:'Evening ride on the C&O Canal Towpath west from the railroad bridge is stunning — flat, quiet, following the Potomac as the light fades.',
+   warn:null},
+]},
+
+{id:7, label:'Day 7', title:'Antietam', events:[
+  {id:'co-canal-ride', name:'C&O Canal Towpath — Harpers Ferry to Antietam', mode:'bike',
+   arrive:null, depart:'~8:00am', duration:'~12 miles · 1.5–2 hours',
+   coords:[39.4557,-77.7446],
+   eyebrow:'Day 7 · Morning · Bicycle · C&O Canal Towpath',
+   body:'Depart Harpers Ferry by 8am and ride the C&O Canal Towpath north along the Potomac — 12 flat, traffic-free miles of crushed limestone, the signature ride of the entire tour. This path traces the very ground over which Lee\'s army crossed the Potomac in September 1862. Pass Boteler\'s Ford near Shepherdstown, where Confederate stragglers crossed under Union fire on September 19 — two days after the battle that killed Branch. Exit the towpath at the Burnside Bridge Road area to reach Antietam.',
+   logistics:[
+     {icon:'🚲',text:'Start at the Harpers Ferry railroad bridge crossing. Follow towpath north ~12 miles to Lock 38 / Antietam Creek Aqueduct area. Flat crushed limestone — suitable for hybrid or gravel bike.'},
+     {icon:'📍',text:'Exit towpath at Burnside Bridge Rd and follow signs east to Antietam National Battlefield Visitor Center.'},
+     {icon:'⏱️',text:'Allow 1.5–2 hours riding, plus optional stop at Shepherdstown (~8 miles) — the town where Lee\'s wounded flooded after the battle.'}
+   ],
+   bikeNote:'The most historically resonant ride of the tour. At Boteler\'s Ford near Shepherdstown, you cross the retreat corridor of Lee\'s Army of Northern Virginia.',
+   warn:null},
+
+  {id:'antietam-battlefield', name:'Antietam National Battlefield', mode:'battle',
+   arrive:'~10:00am', depart:null, duration:'3–4 hours',
+   coords:[39.4757,-77.7446],
+   eyebrow:'Day 7 · Mid-Morning · Bicycle tour of battlefield',
+   body:'September 17, 1862. Branch\'s brigade held the Confederate left along the Hagerstown Turnpike in the bloodiest single day in American military history — 23,000 casualties. Branch was killed here in the late afternoon by a sharpshooter\'s bullet, hours before the fighting ended. Ramsay\'s battery was positioned nearby. It was here, on this field, that Ramsay looked through his spyglass — the spyglass now in your family — and described troop positions to Robert E. Lee, whose injured hands prevented him from using it himself. The 8.5-mile battlefield auto tour route translates perfectly to a self-guided bike tour.',
+   logistics:[
+     {icon:'🏛️',text:'Antietam National Battlefield Visitor Center: 5831 Dunker Church Rd, Sharpsburg MD 21782. Open daily. Film and museum inside.'},
+     {icon:'🚲',text:'The 8.5-mile battlefield tour route is one of the finest cycling routes in the mid-Atlantic — low traffic, rolling farmland, extraordinary views.'},
+     {icon:'📍',text:'LOB Branch fell near the North Woods / Dunker Church area. A marker identifies the spot. Stand there.'},
+     {icon:'🚗',text:'For a full interpretation: NPS can recommend licensed battlefield guides. Consider booking in advance for a 2-hour guided tour.'}
+   ],
+   bikeNote:'The Cornfield, Sunken Road (Bloody Lane), and Burnside Bridge are all accessible on the bike tour route. Allow 3–4 hours minimum to ride and reflect.',
+   warn:null},
+
+  {id:'shepherdstown-lodge', name:'Overnight — Jacob Rohrbach Inn, Sharpsburg', mode:'lodge',
+   arrive:'~2–3pm', depart:null, duration:'Overnight',
+   coords:[39.4472,-77.7399],
+   eyebrow:'Day 7 · Afternoon/Evening · Overnight at the battlefield',
+   body:'The Jacob Rohrbach Inn is the ideal place to end this tour. The 1804 Federal-style brick house stands on West Main Street in Sharpsburg — less than a mile from the battlefield — and is named for the man who owned the farm at the creek crossing now known as Burnside Bridge. Rohrbach\'s bridge, Rohrbach\'s farm, Rohrbach\'s house: you sleep inside the battle\'s geography. Innkeepers Chris and Amy Vincent are deeply knowledgeable about Antietam, and the inn provides bicycles for guests to ride the battlefield and the C&O Canal, just 1.25 miles away. Country breakfast served at 8:30am; coffee available from 7am.',
+   logistics:[
+     {icon:'🏨',text:'Jacob Rohrbach Inn: 138 W Main St, Sharpsburg MD 21782. Phone: (301) 432-5079. Email: info@jacob-rohrbach-inn.com. Web: jacob-rohrbach-inn.com. Five rooms, all private baths. Book well ahead — fills quickly around Antietam events.'},
+     {icon:'🚲',text:'Inn provides bicycles for guests — ideal for an early-morning ride to the battlefield before crowds arrive, or a run down to the C&O Canal towpath (1.25 miles).'},
+     {icon:'🍳',text:'Breakfast at 8:30am daily: country-style, locally sourced, from the inn\'s own gardens. Coffee from 7am.'},
+     {icon:'🏨',text:'Alternative lodging: Bavarian Inn (164 Shepherd Grade Rd, Shepherdstown WV) or Thomas Shepherd Inn (300 W German St, Shepherdstown) — both across the Potomac, ~4 miles from battlefield.'},
+     {icon:'🚂',text:'Return to DC: Amtrak Capitol Limited departs Harpers Ferry ~11:30am daily, arrives Union Station ~1pm. MARC Brunswick Line eastbound weekday mornings (multiple departures 5am–7am from Harpers Ferry).'}
+   ],
+   bikeNote:'Borrow an inn bicycle for a dawn ride to the battlefield — the ground looks different in the early light, before the tour buses arrive. Burnside Bridge is a 10-minute ride from the inn\'s front door.',
+   warn:null},
+]},
+];
+
+// ─── ROUTE LINES ────────────────────────────────────────────────────────────────
+const ROUTES = [
+  {coords:[[38.8974,-77.0066],[37.7596,-77.4812]], mode:'train'},
+  {coords:[[37.7596,-77.4812],[37.7447,-77.3464]], mode:'bike'},
+  {coords:[[37.7447,-77.3464],[37.6240,-77.3568]], mode:'tour'},
+  {coords:[[37.7596,-77.4812],[37.5333,-77.4284]], mode:'train'},
+  {coords:[[37.5333,-77.4284],[37.5381,-77.4525]], mode:'bike'},
+  {coords:[[37.5381,-77.4525],[37.5540,-77.4593]], mode:'bike'},
+  {coords:[[37.5333,-77.4284],[38.0293,-78.4767]], mode:'bus'},
+  {coords:[[38.0293,-78.4767],[38.4722,-77.9933]], mode:'train'},
+  {coords:[[38.4722,-77.9933],[38.2458,-78.1130]], mode:'bus'},
+  {coords:[[38.2458,-78.1130],[38.1381,-78.1840]], mode:'tour'},
+  {coords:[[38.2458,-78.1130],[38.4722,-77.9933]], mode:'bus'},
+  {coords:[[38.4722,-77.9933],[38.7510,-77.4760]], mode:'train'},
+  {coords:[[38.7510,-77.4760],[38.8133,-77.5244]], mode:'tour'},
+  {coords:[[38.8133,-77.5244],[38.7240,-77.5430]], mode:'tour'},
+  {coords:[[38.7510,-77.4760],[38.8974,-77.0066]], mode:'train'},
+  {coords:[[38.8974,-77.0066],[39.3244,-77.7311]], mode:'train'},
+  {coords:[[39.3244,-77.7311],[39.3239,-77.7296]], mode:'bike'},
+  {coords:[[39.3239,-77.7296],[39.4557,-77.7446]], mode:'bike'},
+  {coords:[[39.4557,-77.7446],[39.4757,-77.7446]], mode:'bike'},
+  {coords:[[39.4757,-77.7446],[39.4472,-77.7399]], mode:'bike'},
+];
+
+// ─── MAP ────────────────────────────────────────────────────────────────────────
+const map = L.map('map',{center:[38.5,-77.8],zoom:7,zoomControl:true});
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+  attribution:'© OpenStreetMap contributors, © CARTO',maxZoom:18,subdomains:'abcd'
+}).addTo(map);
+
+ROUTES.forEach(r=>{
+  L.polyline(r.coords,{
+    color:C[r.mode]||'#888',weight:r.mode==='bike'?3:2.5,opacity:.65,
+    dashArray:r.mode==='tour'?'6 4':null
+  }).addTo(map);
+});
+
+// Build marker index
+const allEvents = DAYS.flatMap(d=>d.events);
+const markers = {};
+allEvents.forEach(ev=>{
+  const color=C[ev.mode]||'#888', emoji=E[ev.mode]||'•';
+  const icon=L.divIcon({className:'',
+    html:`<div style="width:26px;height:26px;border-radius:50%;background:${color};border:2px solid rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;font-size:11px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.5);">${emoji}</div>`,
+    iconSize:[26,26],iconAnchor:[13,13]});
+  const m=L.marker(ev.coords,{icon}).addTo(map);
+  m.bindPopup(`<div class="pop-title">${ev.name}</div><div class="pop-meta">${ev.eyebrow}</div>${ev.depart?`<div class="pop-time">Dep: ${ev.depart}</div>`:''}${ev.arrive&&!ev.depart?`<div class="pop-time">Arr: ${ev.arrive}</div>`:''}`,{maxWidth:260});
+  m.on('click',()=>selectEvent(ev.id));
+  markers[ev.id]=m;
+});
+
+// ─── UI STATE ────────────────────────────────────────────────────────────────────
+let activeDay=1, activeId=null;
+
+function buildTabs(){
+  const c=document.getElementById('dayTabs');
+  DAYS.forEach(d=>{
+    const b=document.createElement('button');
+    b.className='dtab'+(d.id===activeDay?' active':'');
+    b.textContent=`${d.label}`;
+    b.title=d.title;
+    b.addEventListener('click',()=>{
+      activeDay=d.id;
+      document.querySelectorAll('.dtab').forEach(t=>t.classList.remove('active'));
+      b.classList.add('active');
+      buildTimeline();
+      const first=d.events[0];
+      if(first) map.panTo(first.coords,{animate:true,duration:.6});
+    });
+    c.appendChild(b);
+  });
+}
+
+function buildTimeline(){
+  const c=document.getElementById('timeline');
+  c.innerHTML='';
+  const day=DAYS.find(d=>d.id===activeDay);
+  if(!day) return;
+
+  day.events.forEach((ev,i)=>{
+    const color=C[ev.mode]||'#888', emoji=E[ev.mode]||'•';
+    const isActive=ev.id===activeId;
+
+    // TIME + DOT column wrapper
+    const row=document.createElement('div');
+    row.className='t-event'+(isActive?' active':'');
+    row.dataset.id=ev.id;
+
+    // Timing display
+    let timeHTML='';
+    if(ev.depart && ev.arrive){
+      timeHTML=`<div class="arr" style="font-size:.58rem">arr ${ev.arrive}</div><div class="dep">${ev.depart}</div>`;
+    } else if(ev.depart){
+      timeHTML=`<div class="dep">${ev.depart}</div>`;
+    } else if(ev.arrive){
+      timeHTML=`<div class="dep" style="color:var(--muted)">${ev.arrive}</div>`;
+    }
+
+    row.innerHTML=`
+      <div class="t-left">
+        <div class="t-time">${timeHTML}</div>
+        <div class="t-dot" style="border-color:${color};"></div>
+        <div class="t-vline" style="background:${color}44;display:${i<day.events.length-1?'block':'none'}"></div>
+      </div>
+      <div class="t-card" style="${isActive?'border-left-color:var(--gold)':''}">
+        <div class="t-label" style="color:${color}">${emoji} ${ev.mode.toUpperCase()}${ev.duration?` · ${ev.duration}`:''}</div>
+        <div class="t-name">${ev.name}</div>
+        ${ev.warn?`<div style="font-size:.62rem;color:#c8a030;margin-top:2px;">⚠️ Weekday constraint</div>`:''}
+      </div>`;
+
+    row.addEventListener('click',()=>selectEvent(ev.id));
+    c.appendChild(row);
+  });
+}
+
+function selectEvent(id){
+  activeId=id;
+  document.querySelectorAll('.t-event').forEach(el=>el.classList.toggle('active',el.dataset.id===id));
+  document.querySelectorAll('.t-event .t-card').forEach(el=>{
+    el.style.borderLeftColor = el.closest('.t-event').dataset.id===id ? 'var(--gold)' : 'transparent';
+  });
+  const ev=allEvents.find(e=>e.id===id);
+  if(!ev) return;
+  map.panTo(ev.coords,{animate:true,duration:.5});
+  markers[id]?.openPopup();
+  showDetail(ev);
+}
+
+function showDetail(ev){
+  const panel=document.getElementById('detail');
+  const color=C[ev.mode]||'#888', emoji=E[ev.mode]||'•';
+
+  // Timing chips
+  let timingHTML='';
+  if(ev.depart) timingHTML+=`<div class="d-chip" style="color:${color};border-color:${color}44;background:${color}18;">🕐 Dep: ${ev.depart}</div>`;
+  if(ev.arrive && !ev.depart) timingHTML+=`<div class="d-chip" style="color:var(--muted);border-color:#444;background:rgba(255,255,255,.04);">📍 Arr: ${ev.arrive}</div>`;
+  if(ev.duration) timingHTML+=`<div class="d-chip" style="color:var(--muted);border-color:#444;background:rgba(255,255,255,.04);">⏱ ${ev.duration}</div>`;
+
+  const logHTML = (ev.logistics||[]).map(l=>`<div class="d-row"><span class="d-icon">${l.icon}</span><span>${l.text}</span></div>`).join('');
+  const bikeHTML = ev.bikeNote ? `<div class="d-bike">🚲 ${ev.bikeNote}</div>` : '';
+  const warnHTML = ev.warn ? `<div class="d-warn">${ev.warn}</div>` : '';
+
+  panel.innerHTML=`
+    <button class="d-close" onclick="document.getElementById('detail').classList.add('hidden')">✕</button>
+    <div class="d-eye">${ev.eyebrow}</div>
+    <div class="d-title">${ev.name}</div>
+    <div class="d-timing">
+      <div class="d-chip" style="color:${color};border-color:${color}55;background:${color}18;">${emoji} ${ev.mode.charAt(0).toUpperCase()+ev.mode.slice(1)}</div>
+      ${timingHTML}
+    </div>
+    <div class="d-body">${ev.body}</div>
+    ${logHTML||warnHTML||bikeHTML ? `<div class="d-box"><div class="d-box-title">Logistics &amp; Timing</div>${logHTML}</div>` : ''}
+    ${warnHTML}${bikeHTML}`;
+  panel.classList.remove('hidden');
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────────
+buildTabs();
+buildTimeline();
+if(allEvents.length) selectEvent(allEvents[0].id);
+</script>
+</body>
+</html>
