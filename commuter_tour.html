@@ -296,20 +296,39 @@ const DAYS = [
    ],
    bikeNote:null, warn:'⚠️ WEEKDAYS ONLY. Must be Thursday to use TOOT. If your Day 4 arrival was Wednesday, Day 5 is Thursday — you\'re on schedule.'},
 
-  {id:'culpeper-manassas-train', name:'Culpeper → Manassas', mode:'train',
+  {id:'culpeper-manassas-train', name:'Day 5 Option A — Culpeper → Manassas by Train', mode:'train',
    arrive:null, depart:'~10am (NE Regional northbound)', duration:'~40 min · arr. ~10:40am',
    coords:[38.7510,-77.4760],
-   eyebrow:'Day 5 · Late Morning · Amtrak Northeast Regional',
-   body:'The northbound Northeast Regional carries you from Culpeper to Manassas in roughly 40 minutes, cutting across the Prince William County Piedmont through country Branch\'s army retreated through after Second Manassas. Manassas station sits just west of Old Town Manassas, within easy walking distance of the Civil War Museum.',
+   eyebrow:'Day 5 · Late Morning · Amtrak Northeast Regional · OPTION A',
+   body:'Option A — the transit route. The northbound Northeast Regional carries you from Culpeper to Manassas in roughly 40 minutes. See Option B below for the full e-bike recreation of Jackson\'s flank march — one of the great detours of this entire tour.',
    logistics:[
      {icon:'🚂',text:'Amtrak NE Regional northbound: Culpeper (CLP) → Manassas (MSS). ~40 min. Check amtrak.com for current northbound morning times — two trains daily.'},
-     {icon:'🏨',text:'Lodging: Manassas Junction Bed & Breakfast, 9311 Prescott Ave — a restored 1902 Queen Anne Eastlake home in the historic district, walking distance to the station and museum. The property sits adjacent to the Norfolk Southern rail line; train-spotting from the dining room bay window is a feature, not a bug. Phone: (703) 216-7803. Web: manassasjunction.com.'},
-     {icon:'🍳',text:'Full organic gourmet breakfast included, with seasonal produce from the inn\'s own garden. Rooms have four-poster beds and clawfoot tubs.'}
+     {icon:'🏨',text:'Lodging: Manassas Junction B&B, 9311 Prescott Ave — restored 1902 Queen Anne Eastlake home, walking distance to station and museum. Adjacent to Norfolk Southern rail line; train-spotting from the dining room is a feature. Phone: (703) 216-7803.'},
+     {icon:'🍳',text:'Full organic gourmet breakfast included. Rooms have four-poster beds and clawfoot tubs.'}
    ],
    bikeNote:null, warn:null},
 
-  {id:'second-manassas', name:'Second Manassas National Battlefield', mode:'tour',
-   arrive:'~11am', depart:null, duration:'3–4 hours',
+  {id:'jackson-flank-march-bike', name:"Day 5 Option B — Jackson's Flank March by E-Bike", mode:'bike',
+   arrive:null, depart:'~7:00am from Culpeper Station', duration:'~55 miles · 5–7 hours · E-BIKE STRONGLY RECOMMENDED',
+   coords:[38.5080,-77.8960],
+   eyebrow:"Day 5 · Full Day · E-Bike · Culpeper → Brandy Station → Waterloo Bridge → Marshall → Thoroughfare Gap → Manassas · OPTION B",
+   body:"Option B — the most ambitious and historically immersive ride of the entire tour. On August 25–26, 1862, Jackson's corps — Branch's brigade marching in column — swept 55 miles from Jeffersonton northwest of Culpeper, through Thoroughfare Gap in the Bull Run Mountains, to strike the Orange & Alexandria Railroad at Bristoe Station and Manassas Junction. This route approximates that march on quiet Virginia back roads and one extraordinary historic bridge. Depart Culpeper Station by 7am, ride north to Brandy Station, then northwest through Jeffersonton, cross the Rappahannock at the Waterloo Bridge on Route 613, continue north through Hume and Marshall, push through Thoroughfare Gap on Route 55, and arrive at Manassas — where Jackson's men arrived on August 26 to burn the Union supply depot. You have ridden this route. On a regular bike it is a genuine challenge. On an e-bike, it becomes one of the great Civil War rides in Virginia.",
+   logistics:[
+     {icon:'🚲',text:"Leg 1 — Culpeper to Brandy Station (~8 miles): north on Beverly Ford Road / US 15 Alt. Brandy Station saw the largest cavalry battle ever fought on American soil (June 9, 1863). Fleetwood Hill markers are worth 20 minutes."},
+     {icon:'🚲',text:"Leg 2 — Brandy Station to Waterloo Bridge (~15 miles): northwest via Alanthus Road and Route 229 (Rixeyville Road) through Jeffersonton to Route 613. Rolling Piedmont farmland, horse country, very light traffic — Jackson's terrain in the August heat."},
+     {icon:'🌉',text:"Waterloo Bridge (Route 613 / Rappahannock River): the Rappahannock crossing used on Jackson's flanking march. The 1878 iron Pratt through-truss bridge sits on Civil War-era stone piers. Restored and reopened February 2021 after a $3.65M rehabilitation — now the oldest metal truss bridge in service in Virginia. A Virginia DHR historical marker at the bridge explicitly references Jackson's 'Ride Around Pope.' Cross it slowly."},
+     {icon:'🚲',text:'Leg 3 — Waterloo to Marshall (~12 miles): north on Route 688 / Leeds Manor Road through Hume. Rolling Fauquier County horse country with real climbing. Marshall (formerly Salem) was a key waypoint on the original march.'},
+     {icon:'🚲',text:"Leg 4 — Marshall to Thoroughfare Gap (~8 miles): east on Route 55 (John Marshall Highway). The gap cuts through the Bull Run Mountains at 423 ft. On August 28, 1862, Longstreet held this gap open while Jackson engaged Pope. The ruins of Beverley Mill stand at the eastern mouth. Route 55 carries moderate truck traffic — use the shoulder through the gap."},
+     {icon:'🚲',text:"Leg 5 — Thoroughfare Gap to Manassas (~12 miles): east on Route 55 through Gainesville. Terrain flattens as you descend. You arrive at Manassas exactly as Jackson's men did — from the west, through the gap, onto the plains where the battle would be fought."},
+     {icon:'⚡',text:'E-bike strongly recommended. Total elevation gain ~2,800 ft, concentrated in the hills between Waterloo and Marshall. Folding e-bike covers the route in 5–6 hours with stops. Regular bike is doable but plan 7–8 hours and carry extra food and water.'},
+     {icon:'🏨',text:'Arrive Manassas: Manassas Junction B&B (9311 Prescott Ave). Call ahead to arrange late arrival: (703) 216-7803.'},
+     {icon:'💧',text:'Water/resupply: Culpeper (start), Brandy Station (limited), Jeffersonton (small store), Marshall (gas station/deli), Gainesville (full services). Carry at least 2 liters and top up at every stop.'}
+   ],
+   bikeNote:"Jackson's corps covered this ground in two days carrying muskets and three days' rations in August heat. You have an e-bike and a Camelbak. The Waterloo Bridge alone justifies the detour.",
+   warn:'⚠️ Full-day commitment — 55 miles with ~2,800 ft of climbing. Depart no later than 7am. Route 55 through Thoroughfare Gap carries truck traffic — use the shoulder carefully. Check weather before departing.'},
+
+  {id:'second-manassas', name:'Second Manassas National Battlefield', mode:'battle',
+   arrive:'~11am (Option A) or late afternoon (Option B)', depart:null, duration:'3–4 hours',
    coords:[38.8133,-77.5244],
    eyebrow:'Day 5 · Midday–Afternoon · Arranged driving tour from Manassas',
    body:'Second Manassas (August 28–31, 1862) was Branch\'s finest hour. His North Carolina brigade held the left of Jackson\'s line along an unfinished railroad cut, repelling repeated Union assaults before Longstreet\'s massive flank attack crushed Pope\'s army. This was the engagement that cemented Branch\'s reputation. The battlefield is vast — a vehicle is essential. The Visitor Center\'s film and exhibits are excellent context before driving the ground.',
@@ -335,19 +354,50 @@ const DAYS = [
 ]},
 
 {id:6, label:'Day 6', title:'Harpers Ferry, WV', events:[
-  {id:'manassas-dc-vre', name:'Manassas → Union Station via VRE', mode:'train',
-   arrive:null, depart:'5:29am / 6:24am / 7:29am / 8:09am', duration:'~70 min · arr. 6:40–9:20am',
+  {id:'manassas-dc-vre', name:'Route Option A — Manassas → Union Station via VRE', mode:'train',
+   arrive:null, depart:'5:29am / 6:24am / 7:29am / 8:09am', duration:'~70 min · WEEKDAYS ONLY',
    coords:[38.8974,-77.0066],
-   eyebrow:'Day 6 · Morning · VRE Manassas Line · WEEKDAYS ONLY',
-   body:'Virginia Railway Express (VRE) Manassas Line commuter trains depart Manassas Station northbound in the morning for Union Station. Four departures: 5:29am (arr. 6:40am), 6:24am (arr. 7:35am), 7:29am (arr. 8:40am), or 8:09am (arr. 9:20am). Take the 7:29am departure to arrive Union Station at 8:40am with comfortable time to transfer to either MARC or wait for the afternoon Capitol Limited.',
+   eyebrow:'Day 6 · Morning · VRE Manassas Line · OPTION A · WEEKDAYS ONLY',
+   body:'Option A — the transit route. Virginia Railway Express (VRE) Manassas Line commuter trains depart Manassas Station northbound in the morning for Union Station. Take the 7:29am departure (arr. 8:40am) for comfortable time to transfer to either MARC or the afternoon Amtrak Capitol Limited to Harpers Ferry. See Option B below for the W&OD Trail + Point of Rocks bicycle alternative.',
    logistics:[
-     {icon:'🚂',text:'VRE Manassas Line (Train 332): departs Manassas 7:29am, arrives Union Station 8:40am. Weekdays only. Tickets at vre.org.'},
-     {icon:'🚲',text:'Full-size and folding bikes permitted on all VRE trains — no reservation needed.'},
-     {icon:'🔄',text:'At Union Station: transfer to MARC Brunswick Line (westbound to Harpers Ferry) or wait for Amtrak Capitol Limited (departs ~4pm).'}
+     {icon:'🚂',text:'VRE Manassas Line: departs Manassas 7:29am, arrives Union Station 8:40am. Weekdays only. Tickets at vre.org. Full-size and folding bikes permitted — no reservation needed.'},
+     {icon:'🔄',text:'At Union Station: transfer to MARC Brunswick Line westbound (departs 4:55pm Mon–Thu, 1:30pm Fri) or Amtrak Capitol Limited (departs ~4pm daily) to Harpers Ferry.'}
    ],
-   bikeNote:null, warn:'⚠️ VRE runs WEEKDAYS ONLY, rush-hour direction only in mornings (northbound to DC). This leg must be a Friday morning — arriving Harpers Ferry Friday evening is ideal for a weekend at the battlefield.'},
+   bikeNote:null, warn:'⚠️ VRE runs WEEKDAYS ONLY. This leg must fall on a Friday morning. Arriving Harpers Ferry Friday evening is ideal for a weekend at the battlefield.'},
 
-  {id:'dc-harpers-ferry', name:'Union Station → Harpers Ferry, WV', mode:'train',
+  {id:'wod-whites-ford', name:'Route Option B1 — W&OD Trail + White\'s Ford Wade + C&O Towpath', mode:'bike',
+   arrive:null, depart:'~6:30am from Manassas or Chantilly', duration:'~30–35 miles · 3–4 hours · includes Potomac wade',
+   coords:[39.1147,-77.5430],
+   eyebrow:'Day 6 · Morning · Bicycle · W&OD → White\'s Ford → C&O Towpath → Point of Rocks · OPTION B1 · Adventure Route',
+   body:'Option B1 — the most historically resonant route on the entire tour. Depart Manassas or Chantilly early and ride the W&OD Trail west to Leesburg, then follow Battlefield Parkway north ~4 miles to White\'s Ford Regional Park on the Virginia shore of the Potomac. This is the exact crossing point where Lee\'s Army of Northern Virginia — Branch\'s brigade among them — waded into Maryland in September 1862 to begin the campaign that ended at Antietam. The ford sits at approximately Lock 26 on the C&O Canal (mile 39). Wade the Potomac, cross onto the Maryland bank, and pick up the C&O Canal Towpath heading northwest ~9 miles to Point of Rocks station, where the MARC Brunswick Line carries you the remaining 13 miles to Harpers Ferry. You will have crossed the same river, at the same spot, as the men you are tracing.',
+   logistics:[
+     {icon:'🚲',text:'W&OD to Leesburg: join the W&OD at Chantilly (mile ~24) for a ~17-mile ride west to Leesburg. Paved asphalt, generally flat with gradual elevation gain. From Leesburg, follow Battlefield Parkway / Rt 654 north ~4 miles to White\'s Ford Regional Park (43646 Hibler Rd, Leesburg VA 20176). NOVA Parks property — free public access.'},
+     {icon:'🌊',text:'White\'s Ford crossing: the ford sits at C&O Canal Lock 26, mile 39. The Potomac is wide and historically shallow here — armies used it precisely because it was fordable. In summer/fall low-water conditions expect knee-to-thigh depth. Remove shoes, secure gear in dry bags, and walk bikes across. Check USGS Potomac gauge at Point of Rocks (station 01638500) the evening before — safe fording typically under 4.0 ft. waterdata.usgs.gov.'},
+     {icon:'🗺️',text:'C&O Towpath to Point of Rocks: once across, join the C&O Canal Towpath heading northwest. Point of Rocks station is ~9 miles up the towpath (mile 48.2). Note: the towpath in the mile or two approaching Point of Rocks can be muddy after rain — plan accordingly.'},
+     {icon:'🚂',text:'Point of Rocks MARC Station: 4000 Clay Street, Point of Rocks MD. A stunning 1875 Gothic B&O Railroad station. Board the westbound Brunswick Line to Harpers Ferry (~25 min). Full-size bikes and e-bikes permitted on all Brunswick Line trains. Check mta.maryland.gov/marc-brunswick for westbound departure times.'},
+     {icon:'⚡',text:'E-bike note: a folding e-bike is ideal for the W&OD leg. For the ford itself, lift the bike and carry or wheel it through — motor and battery should be kept clear of submersion. Most folding e-bikes have splash-resistant components but check your model\'s water rating before attempting.'},
+     {icon:'🏛️',text:'White\'s Ford Regional Park has interpretive signs describing Lee\'s 1862 crossing. Allow 15–20 minutes here to read the markers and take in the ground before wading.'}
+   ],
+   bikeNote:'Branch\'s brigade crossed here on September 4–6, 1862 — singing "Maryland, My Maryland" as they waded in. You are following their exact line of march into enemy territory.',
+   warn:'⚠️ The ford crossing requires advance planning. Check the USGS gauge at Point of Rocks (station 01638500) at waterdata.usgs.gov the evening before — do not attempt above 4.0 ft. Bring water shoes, dry bags for electronics and gear, and a change of socks. This is an adventure route.'},
+
+  {id:'wod-point-of-rocks', name:'Route Option B2 — W&OD Trail + Point of Rocks Bridge (Dry Crossing)', mode:'bike',
+   arrive:null, depart:'~6:30am from Manassas or Chantilly', duration:'~35–40 miles · 3–4 hours · no ford required',
+   coords:[39.2735,-77.5333],
+   eyebrow:'Day 6 · Morning · Bicycle · W&OD → Purcellville → Point of Rocks Bridge · OPTION B2 · Dry Route',
+   body:'Option B2 — the full W&OD route to Point of Rocks via bridge, no ford required. Ride the W&OD Trail all the way to its western terminus at Purcellville, then follow quiet rural Loudoun County roads north ~9 miles through Lovettsville to the US Route 15 bridge at Point of Rocks — crossing the Potomac into Maryland on the bridge and arriving directly at the MARC station. This route covers the full 45-mile W&OD, itself historically significant as the former Washington & Old Dominion Railroad right-of-way that both armies fought to control in 1861–62. The Lovettsville corridor north of Purcellville was active cavalry country throughout the war. Point of Rocks station, a gorgeous 1875 Gothic B&O Railroad building, is the reward at the end.',
+   logistics:[
+     {icon:'🚲',text:'W&OD Trail full western run: join at Chantilly (mile ~24) or Manassas via connector. Ride to Purcellville terminus (~21 miles from Chantilly). Paved asphalt throughout, ~470 ft gradual elevation gain westward — very manageable on an e-bike.'},
+     {icon:'🗺️',text:'Purcellville to Point of Rocks: ~9 miles north via Hirst Rd → Morrisonville Rd → Lovettsville Rd → Point of Rocks Rd (MD 464). Quiet rural roads through Lovettsville, VA, then across the US 15 bridge over the Potomac into Maryland. The Lovettsville area saw repeated cavalry action in 1862–63.'},
+     {icon:'🚂',text:'Point of Rocks MARC Station: 4000 Clay Street, Point of Rocks MD. Board the westbound Brunswick Line to Harpers Ferry (~25 min). Full-size bikes and e-bikes permitted. Check mta.maryland.gov/marc-brunswick for westbound afternoon departure times.'},
+     {icon:'⏱️',text:'Total: ~35–40 miles over 3–4 hours. Depart by 6:30–7am to reach Point of Rocks by mid-morning with time to explore the station and catch an afternoon MARC to Harpers Ferry.'},
+     {icon:'⚡',text:'E-bike advantage: the gradual westward elevation gain on the W&OD is the main physical challenge of this route. An e-bike makes it a comfortable morning ride rather than an endurance effort.'},
+     {icon:'⛴️',text:'Note: White\'s Ferry (the former vehicle ferry near Leesburg) has been closed since 2020 due to a legal dispute — do not plan around it. White\'s Ford (Option B1) is the correct wade crossing if you want to ford the river.'}
+   ],
+   bikeNote:'The W&OD follows the original railroad bed that Stonewall Jackson\'s cavalry raided in October 1861, tearing up track near Vienna. Riding it west toward the Blue Ridge puts you on contested ground from the earliest weeks of the war.',
+   warn:'Check current MARC Brunswick westbound schedule at mta.maryland.gov before departure — limited afternoon trains run westbound from Point of Rocks on weekdays.'},
+
+  {id:'dc-harpers-ferry', name:'Option A continued — Union Station → Harpers Ferry, WV', mode:'train',
    arrive:null, depart:'MARC ~4:55pm (Mon–Thu), ~1:30pm (Fri) · OR Amtrak ~4:00pm daily', duration:'~90 min · arr. ~5:15–6:30pm',
    coords:[39.3244,-77.7311],
    eyebrow:'Day 6 · Afternoon · MARC Brunswick Line OR Amtrak Capitol Limited',
@@ -448,10 +498,18 @@ const ROUTES = [
   {coords:[[38.2458,-78.1130],[38.1381,-78.1840]], mode:'tour'},
   {coords:[[38.2458,-78.1130],[38.4722,-77.9933]], mode:'bus'},
   {coords:[[38.4722,-77.9933],[38.7510,-77.4760]], mode:'train'},
+  // Option B: Jackson flank march bike route Culpeper→Brandy Station→Waterloo→Marshall→Thoroughfare Gap→Manassas
+  {coords:[[38.4722,-77.9933],[38.5080,-77.8960],[38.5850,-77.9650],[38.6580,-77.9750],[38.7210,-77.9200],[38.7580,-77.8200],[38.7510,-77.4760]], mode:'bike'},
   {coords:[[38.7510,-77.4760],[38.8133,-77.5244]], mode:'tour'},
   {coords:[[38.8133,-77.5244],[38.7240,-77.5430]], mode:'tour'},
   {coords:[[38.7510,-77.4760],[38.8974,-77.0066]], mode:'train'},
+  // Option B1: W&OD west to Leesburg, north to White's Ford, C&O towpath to Point of Rocks
+  {coords:[[38.7510,-77.4760],[38.9410,-77.3960],[39.0850,-77.5680],[39.1147,-77.5430],[39.2735,-77.5333]], mode:'bike'},
+  // Option B2: W&OD all the way to Purcellville, then north to Point of Rocks via bridge
+  {coords:[[38.9410,-77.3960],[39.1360,-77.7160],[39.2735,-77.5333]], mode:'bike'},
   {coords:[[38.8974,-77.0066],[39.3244,-77.7311]], mode:'train'},
+  // Option B: MARC Brunswick from Point of Rocks to Harpers Ferry
+  {coords:[[39.2735,-77.5333],[39.3244,-77.7311]], mode:'train'},
   {coords:[[39.3244,-77.7311],[39.3239,-77.7296]], mode:'bike'},
   {coords:[[39.3239,-77.7296],[39.4557,-77.7446]], mode:'bike'},
   {coords:[[39.4557,-77.7446],[39.4757,-77.7446]], mode:'bike'},
